@@ -1,34 +1,49 @@
 # dsh-client-ui-mobile-mono
 
-DeepSeek Harness（DSH）Web UI 的**移动端适配插件**：手机浏览器自动切换抽屉式布局 + 设置弹窗全屏化 + 详情面板抽屉化 + 折叠统计，并为所有端注入**黑白（单色）主题**。桌面端零影响。
+> **DSH Mobile UI** — Mobile adaptation plugin (移动端适配插件) for the **DeepSeek Harness (DSH) Web UI**: phone browsers automatically get a **drawer layout** (抽屉式布局), full-screen **bottom-sheet settings** (设置弹窗), a **monochrome black & white theme** (黑白主题), and more. Zero impact on desktop.
 
-插件本体在 [`ui-v2/`](./ui-v2/)，说明见 [ui-v2/README.md](./ui-v2/README.md)。
+[![Version](https://img.shields.io/badge/version-0.4.20-black)](./ui-v2/package.json)
+[![License: MIT](https://img.shields.io/badge/license-MIT-black)](#license)
+[![Platform](https://img.shields.io/badge/platform-DSH%20Web%20%7C%20mobile%20browser-black)](#compatibility)
 
-## 快速安装
+**中文** · English summary below
+
+为 DeepSeek Harness（DSH）Web UI 提供手机浏览器自动适配：侧栏/详情面板变成覆盖式**抽屉**（左缘右滑呼出、拖拽跟手）、设置弹窗全屏化 + 底部标签栏、发送栏统计折叠化、Session log 移动适配，并向所有端注入**黑白单色主题**（light/dark）。桌面端零影响。
+
+**English**: A client-side plugin for the DeepSeek Harness (DSH) Web UI that turns the desktop three-column layout into a mobile-friendly experience: sidebar and details panels become overlay drawers with edge-swipe gestures, the settings dialog becomes a full-screen sheet with a bottom tab bar, composer stats collapse into an expandable chip, and a monochrome (black & white) theme is applied on every device. Desktop is untouched.
+
+## Features 特性
+
+- **Mobile drawer layout 移动抽屉布局** — sidebar / details become overlay drawers; edge-swipe to open, drag with velocity-based commit
+- **Monochrome theme 黑白主题** — 90+ official design tokens remapped to grayscale; light & dark modes
+- **Full-screen settings 全屏设置** — bottom tab bar, animated section switches, per-device prefs card (theme / drawer width / gestures / model-name hiding), persisted in `localStorage`
+- **Stats fold 统计折叠** — session stats (turns / LLM time / tools / TTFT / speed / cache / tokens / context usage) collapse into a chip under the composer
+- **Session log adaptation** — toolbar, ledger rows and inspector adapted for touch; inspector becomes a full-width slide-in sheet
+- **Motion system 动效** — one easing curve across drawers, sheets, menus, switches, segmented controls; `prefers-reduced-motion` respected
+- **Performance 性能** — no `backdrop-filter`, transform-only press feedback, tap-highlight disabled globally (no flicker / jank on mobile)
+
+## Install 安装
 
 ```sh
 git clone https://github.com/MIOYULIN/dsh-client-ui-mobile-mono.git
 cd dsh-client-ui-mobile-mono/ui-v2
-./install.sh                # 默认装进 ~/.dsh/profiles/web
+./install.sh          # installs into ~/.dsh/profiles/web by default
 ```
 
-重启 DSH，手机浏览器打开 Web UI 后**强制刷新**一次。
+Restart DSH, then hard-refresh (Ctrl/Cmd+Shift+R) the Web UI in your phone browser.
 
-卸载：`./uninstall.sh`。本地调试：`pnpm dsh web --patch /绝对路径/dsh-client-ui-mobile-mono/ui-v2/cordis.patch.yml`。
+Uninstall: `./uninstall.sh` · Local dev: `pnpm dsh web --patch /abs/path/dsh-client-ui-mobile-mono/ui-v2/cordis.patch.yml`
 
-## 一览
+Plugin source: [`ui-v2/lib/client.js`](./ui-v2/lib/client.js) · Details: [ui-v2/README.md](./ui-v2/README.md)
 
-- 移动端：会话列独占全宽，侧栏/详情均改为覆盖式抽屉，左缘手势 + 拖拽跟手
-- Session log：工具栏/账本/检查器全面移动适配，检查器全宽 sheet 化
-- 设置弹窗：全屏 sheet + 底部标签栏，含「移动端界面」偏好卡（黑白主题/抽屉宽度/手势/隐藏模型名）
-- 会话统计：收进 composer 下折叠胶囊，点开为双列统计卡（含版本脚注）
-- 黑白主题：90+ 官方 token 灰阶覆盖，light/dark 双模式
-- 统一缓动动效系统，`prefers-reduced-motion` 自动关停
+## Compatibility 兼容性
 
-## 兼容性
+- DSH Web（`@deepseek-ai/dsh-client-runtime` / `dsh-client-ui-layout`）
+- Modern browsers (`ResizeObserver` / `MutationObserver` / `DOMMatrixReadOnly` / `:has()`)
 
-- DSH Web（`@deepseek-ai/dsh-client-runtime` / `dsh-client-ui-layout` 注入）
-- 现代浏览器（依赖 `ResizeObserver` / `MutationObserver` / `DOMMatrixReadOnly` / `:has()`）
+## Keywords 关键词
+
+deepseek harness · dsh · dsh plugin · dsh web ui · dsh-client · mobile ui · mobile-first · responsive · drawer layout · bottom sheet · monochrome · black and white · grayscale theme · 移动端 · 手机端 · 抽屉 · 黑白主题 · 单色 · 适配 · 插件
 
 ## License
 
