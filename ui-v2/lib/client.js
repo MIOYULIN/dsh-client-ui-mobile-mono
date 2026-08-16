@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     var exports = module.exports;
     const react = require("react");
     // 本插件版本（与 package.json 保持同步；统计卡脚注展示用）
-    const VERSION = "0.4.10";
+    const VERSION = "0.4.11";
 
     /* ---------------------------------------------------------------
      * 黑白主题 token 表：--dsw-alias-* / --dsw-specific-* 的灰阶覆盖。
@@ -331,13 +331,80 @@ window.__ModuleLoader__.load({
       from { opacity: 0; transform: translateY(30px) scale(0.98); }
       to { opacity: 1; transform: translateY(0) scale(1); }
     }
+    @keyframes dshmu-menu-in {
+      from { opacity: 0; transform: translateY(-6px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* 抽屉/详情列内容交错入场：开合跳变时 JS 打 data-dshmu-stagger
+       并写入序号 --dshmu-i（限前 14 个交互块，超出不动画，保证长列表性能） */
+    [data-dshmu-mobile] [data-dshmu-stagger] {
+      animation: dshmu-rise 300ms cubic-bezier(0.32, 0.72, 0, 1) both;
+      animation-delay: calc(45ms + var(--dshmu-i, 0) * 24ms);
+    }
+
+    /* 二级菜单（popover/listbox/menu，body 级 portal 每次打开重新挂载，
+       纯 CSS 即可重放）：面板缩放弹入 + 选项交错浮现 */
+    body[data-dshmu-touch] [role="listbox"],
+    body[data-dshmu-touch] [role="menu"] {
+      transform-origin: 50% 0;
+      animation: dshmu-menu-in 220ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    body[data-dshmu-touch] [role="listbox"] [role="option"],
+    body[data-dshmu-touch] [role="menu"] [role="menuitem"] {
+      animation: dshmu-rise 220ms cubic-bezier(0.32, 0.72, 0, 1) both;
+    }
+    body[data-dshmu-touch] [role="listbox"] [role="option"]:nth-child(-n+8),
+    body[data-dshmu-touch] [role="menu"] [role="menuitem"]:nth-child(-n+8) {
+      animation-delay: calc(40ms + var(--dshmu-mi, 0) * 18ms);
+    }
+    body[data-dshmu-touch] [role="listbox"] [role="option"]:nth-child(2),
+    body[data-dshmu-touch] [role="menu"] [role="menuitem"]:nth-child(2) { --dshmu-mi: 1; }
+    body[data-dshmu-touch] [role="listbox"] [role="option"]:nth-child(3),
+    body[data-dshmu-touch] [role="menu"] [role="menuitem"]:nth-child(3) { --dshmu-mi: 2; }
+    body[data-dshmu-touch] [role="listbox"] [role="option"]:nth-child(4),
+    body[data-dshmu-touch] [role="menu"] [role="menuitem"]:nth-child(4) { --dshmu-mi: 3; }
+    body[data-dshmu-touch] [role="listbox"] [role="option"]:nth-child(5),
+    body[data-dshmu-touch] [role="menu"] [role="menuitem"]:nth-child(5) { --dshmu-mi: 4; }
+    body[data-dshmu-touch] [role="listbox"] [role="option"]:nth-child(6),
+    body[data-dshmu-touch] [role="menu"] [role="menuitem"]:nth-child(6) { --dshmu-mi: 5; }
+    body[data-dshmu-touch] [role="listbox"] [role="option"]:nth-child(7),
+    body[data-dshmu-touch] [role="menu"] [role="menuitem"]:nth-child(7) { --dshmu-mi: 6; }
+    body[data-dshmu-touch] [role="listbox"] [role="option"]:nth-child(8),
+    body[data-dshmu-touch] [role="menu"] [role="menuitem"]:nth-child(8) { --dshmu-mi: 7; }
+
+    /* 设置弹窗切标签：内容区子块在重挂载时上滑浮现；插件清单卡片级联 */
+    body[data-dshmu-touch] .VOzbGW_content > *,
+    body[data-dshmu-touch] [role="dialog"] > div:last-child > * {
+      animation: dshmu-rise 260ms cubic-bezier(0.32, 0.72, 0, 1) both;
+    }
+    body[data-dshmu-touch] [role="dialog"] > div:last-child > *:nth-child(2),
+    body[data-dshmu-touch] .VOzbGW_content > *:nth-child(2) { animation-delay: 35ms; }
+    body[data-dshmu-touch] [role="dialog"] > div:last-child > *:nth-child(3),
+    body[data-dshmu-touch] .VOzbGW_content > *:nth-child(3) { animation-delay: 70ms; }
+    body[data-dshmu-touch] [role="dialog"] > div:last-child > *:nth-child(n+4),
+    body[data-dshmu-touch] .VOzbGW_content > *:nth-child(n+4) { animation-delay: 105ms; }
+    body[data-dshmu-touch] .qSYn7G_cards > * {
+      animation: dshmu-rise 240ms cubic-bezier(0.32, 0.72, 0, 1) both;
+    }
+    body[data-dshmu-touch] .qSYn7G_cards > *:nth-child(2) { animation-delay: 40ms; }
+    body[data-dshmu-touch] .qSYn7G_cards > *:nth-child(3) { animation-delay: 80ms; }
+    body[data-dshmu-touch] .qSYn7G_cards > *:nth-child(n+4) { animation-delay: 120ms; }
     /* 系统降低动效偏好：全线关停（含官方弹窗被我们改形的入场） */
     @media (prefers-reduced-motion: reduce) {
       [data-dshmu-mobile] [class*="dshmu-"],
+      [data-dshmu-mobile] [data-dshmu-stagger],
       body[data-dshmu-touch] [class*="dshmu-"],
       body[data-dshmu-touch] [role="dialog"],
+      body[data-dshmu-touch] [role="dialog"] > div:last-child > *,
+      body[data-dshmu-touch] [role="listbox"],
+      body[data-dshmu-touch] [role="listbox"] [role="option"],
+      body[data-dshmu-touch] [role="menu"],
+      body[data-dshmu-touch] [role="menu"] [role="menuitem"],
       body[data-dshmu-touch] .VOzbGW_panel,
-      body[data-dshmu-touch] .VOzbGW_navCell {
+      body[data-dshmu-touch] .VOzbGW_content > *,
+      body[data-dshmu-touch] .VOzbGW_navCell,
+      body[data-dshmu-touch] .qSYn7G_cards > * {
         animation: none !important;
         transition-duration: 0.01ms !important;
       }
@@ -772,10 +839,55 @@ window.__ModuleLoader__.load({
         const sb = drawerEl();
         if (sb !== null) { sb.style.transition = ""; sb.style.transform = ""; }
       };
+      /* 抽屉/详情列内容交错入场：仅在「关→开」跳变时打标（限前 14 个
+       * 交互块，跳过嵌套重复），900ms 后摘标以便下次开抽屉能重放。 */
+      let staggerTimer = 0;
+      let staggerEls = [];
+      const animateColStagger = (col) => {
+        if (col === null || typeof col.querySelectorAll !== "function" || !col.isConnected) return;
+        const els = [];
+        for (const el of col.querySelectorAll('button, a, [role="option"], [role="menuitem"], [role="button"]')) {
+          if (els.length >= 14) break;
+          // 祖先已打标则跳过（querySelectorAll 文档序保证父先于子）
+          if (el.parentElement !== null && el.parentElement.closest("[data-dshmu-stagger]") !== null) continue;
+          els.push(el);
+        }
+        if (els.length === 0) return;
+        els.forEach((el, i) => {
+          el.style.setProperty("--dshmu-i", String(i));
+          el.setAttribute("data-dshmu-stagger", "");
+        });
+        staggerEls = els;
+        clearTimeout(staggerTimer);
+        staggerTimer = setTimeout(() => {
+          for (const el of staggerEls) {
+            if (el.isConnected) {
+              el.removeAttribute("data-dshmu-stagger");
+              el.style.removeProperty("--dshmu-i");
+            }
+          }
+          staggerEls = [];
+        }, 900);
+      };
+      let wasSidebarOpen = false;
+      let wasDetailsOpen = false;
+
       const syncDrawerState = () => {
         if (typeof document === "undefined") return;
         tagColumns();
-        document.body.toggleAttribute("data-dshmu-drawer-open", drawerOpen() || detailsOpen());
+        const sOpen = drawerOpen();
+        const dOpen = detailsOpen();
+        if (frame !== null) {
+          if (sOpen && !wasSidebarOpen) {
+            animateColStagger(frame.querySelector(":scope > [data-dshmu-sidebar]") || frame.firstElementChild);
+          }
+          if (dOpen && !wasDetailsOpen) {
+            animateColStagger(frame.querySelector(":scope > [data-dshmu-details]") || frame.lastElementChild);
+          }
+        }
+        wasSidebarOpen = sOpen;
+        wasDetailsOpen = dOpen;
+        document.body.toggleAttribute("data-dshmu-drawer-open", sOpen || dOpen);
         drag = null;
         resetDragVisual();
       };
@@ -1185,6 +1297,14 @@ window.__ModuleLoader__.load({
           if (drawerMo !== null) drawerMo.disconnect();
           if (sweepMo !== null) sweepMo.disconnect();
           clearTimeout(sweepTimer);
+          clearTimeout(staggerTimer);
+          for (const el of staggerEls) {
+            if (el.isConnected) {
+              el.removeAttribute("data-dshmu-stagger");
+              el.style.removeProperty("--dshmu-i");
+            }
+          }
+          staggerEls = [];
           unhideModelNames();
           if (drag !== null) { resetDragVisual(); drag = null; }
           delete window.__dshmuApplyMode;
