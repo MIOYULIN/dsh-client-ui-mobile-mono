@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     var exports = module.exports;
     const react = require("react");
     // 本插件版本（与 package.json 保持同步；统计卡脚注展示用）
-    const VERSION = "0.4.12";
+    const VERSION = "0.4.13";
 
     /* ---------------------------------------------------------------
      * 黑白主题 token 表：--dsw-alias-* / --dsw-specific-* 的灰阶覆盖。
@@ -405,7 +405,8 @@ window.__ModuleLoader__.load({
       body[data-dshmu-touch] .VOzbGW_content > *,
       body[data-dshmu-touch] .VOzbGW_navCell,
       body[data-dshmu-touch] .qSYn7G_cards > *,
-      body[data-dshmu-touch] [class$="_root"]:has(> [class$="_ledger"]) [class$="_details"] {
+      body[data-dshmu-touch] [class$="_root"]:has(> [class$="_ledger"]) [class$="_details"],
+      body[data-dshmu-touch] [class$="_panel"]:has(> [class$="_bar"] [class$="_segment"]) {
         animation: none !important;
         transition-duration: 0.01ms !important;
       }
@@ -716,6 +717,36 @@ window.__ModuleLoader__.load({
       from { opacity: 0; transform: translateX(38px); }
       to { opacity: 1; transform: none; }
     }
+
+    /* ------------------------------------------------------------
+     * 上下文统计环（composer 工具行内，hash 无关 $= + :has 结构签名）：
+     * 官方触发器仅 28px、弹层 264px 绝对定位于环上方 —— 窄屏下触发器
+     * 难点中、弹层易被 composer 圆角容器裁切或贴穿屏缘。
+     * 触发器放大为触摸目标；弹层转固定定位底部 sheet（含安全区）。
+     * ---------------------------------------------------------- */
+    body[data-dshmu-touch] [class$="_trigger"]:has([class$="_track"]) {
+      width: 34px; height: 34px;
+      transition: transform 140ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    body[data-dshmu-touch] [class$="_trigger"]:has([class$="_track"]):active {
+      transform: scale(0.88);
+    }
+    body[data-dshmu-touch] [class$="_panel"]:has(> [class$="_bar"] [class$="_segment"]) {
+      position: fixed;
+      left: 10px; right: 10px;
+      bottom: calc(16px + var(--dsh-composer-height, 170px) + env(safe-area-inset-bottom, 0px));
+      width: auto; max-width: 430px;
+      margin: 0 auto;
+      border-radius: 16px;
+      padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+      font-size: 13px; line-height: 22px;
+      box-shadow: 0 12px 40px rgb(0 0 0 / 20%), 0 0 0 1px var(--dsw-alias-border-l1, rgb(0 0 0 / 8%));
+      animation: dshmu-sheet-up 280ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    /* 分段条与图例行加大为可读触摸尺寸 */
+    body[data-dshmu-touch] [class$="_panel"]:has(> [class$="_bar"] [class$="_segment"]) [class$="_bar"] { height: 6px; margin: 12px 0 14px; }
+    body[data-dshmu-touch] [class$="_panel"]:has(> [class$="_bar"] [class$="_segment"]) [class$="_row"] { padding: 5px 0; }
+    body[data-dshmu-touch] [class$="_panel"]:has(> [class$="_bar"] [class$="_segment"]) [class$="_swatch"] { width: 10px; height: 10px; }
     `;
 
     /* ---------- 中英双语文案 ---------- */
