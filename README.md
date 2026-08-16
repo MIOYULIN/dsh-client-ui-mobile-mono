@@ -24,7 +24,6 @@ cd dsh-client-ui-mobile-mono/ui-v2
 - 会话统计：收进 composer 下折叠胶囊，点开为双列统计卡（含版本脚注）
 - 黑白主题：90+ 官方 token 灰阶覆盖，light/dark 双模式
 - 统一缓动动效系统，`prefers-reduced-motion` 自动关停
-- 预览：`ui-v2/demo/index.html`（mock 运行时，桌面打开点 `MOBILE` 即可体验）
 
 ## 兼容性
 

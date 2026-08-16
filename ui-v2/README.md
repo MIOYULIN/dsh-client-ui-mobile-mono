@@ -28,8 +28,6 @@ cd ui-v2
 pnpm dsh web --patch /absolute/path/to/dsh-client-ui-mobile-mono/ui-v2/cordis.patch.yml
 ```
 
-预览：浏览器直接打开 `demo/index.html`（mock 运行时），点 `MOBILE` 体验抽屉与黑白主题，点 `EJECT` 验证卸载回滚。
-
 ## 结构
 
 ```
@@ -38,8 +36,6 @@ ui-v2/
 ├── install.sh
 ├── uninstall.sh
 ├── cordis.patch.yml
-├── demo/
-│   └── index.html # 独立演示页（mock harness 运行时）
 └── lib/
     ├── index.js   # 宿主端入口（无宿主侧工作）
     └── client.js  # 浏览器端：抽屉布局 + 黑白主题 + 偏好设置卡 + 折叠统计
