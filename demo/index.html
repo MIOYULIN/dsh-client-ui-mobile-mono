@@ -366,6 +366,13 @@
   }
   body[data-dshmu-touch] .model-chip svg { display: none; }     /* 去下拉箭头 */
   body[data-dshmu-touch] .model-chip .mc-led { width: 5px; height: 5px; }
+  body[data-dshmu-touch] .model-chip .mc-name { display: none; } /* 隐藏模型名（v2 特性演示） */
+  .model-chip .mc-lv {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    font-size: 9px; letter-spacing: .08em; text-transform: uppercase;
+    padding: 2px 5px; border-radius: 6px;
+    background: var(--surface-3); color: var(--fg-2);
+  }
   body[data-dshmu-touch] #btnDetails { width: 28px; height: 28px; }
   body[data-dshmu-touch] .dshmu-header-toggle { width: 30px; height: 30px; }
 
@@ -497,7 +504,7 @@
             <div class="s">ctx 12.4K · drawer ready</div>
           </div>
           <button class="model-chip" title="模型选择（demo）">
-            <span class="mc-led"></span>deepseek-v4
+            <span class="mc-led"></span><span class="mc-name">deepseek-v4</span><span class="mc-lv">深度思考</span>
             <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 3.5 5 6.5 8 3.5"/></svg>
           </button>
           <button class="iconbtn" id="btnDetails" title="切换详情栏（官方 layout 语义）" aria-label="切换详情栏">
@@ -757,7 +764,7 @@ const ctx = {
 
 // 5. 加载真实插件模块并 apply
 try {
-  await import("../lib/client.js");
+  await import("../ui-v2/lib/client.js");
   const m = window.__dshmuSpec.factory((name) => (name === "react" ? reactShim : {}));
   m.apply(ctx);
   console.log("[demo] plugin applied");

@@ -145,14 +145,17 @@ window.__ModuleLoader__.load({
     [data-dshmu-mobile] { grid-template-columns: 0 minmax(0, 1fr) 0 !important; }
 
     /* 侧栏列 absolute 后脱离 grid 流，显式钉住中列列位 */
+    [data-dshmu-mobile] > [data-dshmu-center],
     [data-dshmu-mobile] > div:nth-child(2) { grid-column: 2; grid-row: 1; }
 
-    /* 详情列（第三列，官方子树常驻挂载）→ 右侧全宽覆盖抽屉；
+    /* 详情列（官方子树常驻挂载）→ 右侧全宽覆盖抽屉；
        开合跟随官方 data-details-collapsed。
+       定位双通道：tagColumns() 打的 data-dshmu-details 标记（抗官方
+       hash 类名与列序变化）+ [class*=detailsCol]（hash 无关包含匹配）。
        注意：absolute 后不能保留 grid-column 钉扎 —— abspos 子元素的
        包含块是那个网格区域（第三列已归零宽），width:100% 会被钳到 0。 */
-    [data-dshmu-mobile] > div:nth-child(3),
-    [data-dshmu-mobile] .pI_x6G_detailsCol {
+    [data-dshmu-mobile] > [data-dshmu-details],
+    [data-dshmu-mobile] [class*="detailsCol" i] {
       position: absolute !important;
       top: 0; bottom: 0; right: 0; left: 0;
       width: 100% !important; max-width: 100% !important;
@@ -165,13 +168,14 @@ window.__ModuleLoader__.load({
         transform 320ms cubic-bezier(0.32, 0.72, 0, 1),
         box-shadow 320ms cubic-bezier(0.32, 0.72, 0, 1);
     }
-    [data-dshmu-mobile]:not([data-details-collapsed]) > div:nth-child(3),
-    [data-dshmu-mobile]:not([data-details-collapsed]) .pI_x6G_detailsCol {
+    [data-dshmu-mobile]:not([data-details-collapsed]) > [data-dshmu-details],
+    [data-dshmu-mobile]:not([data-details-collapsed]) [class*="detailsCol" i] {
       transform: translateX(0);
       box-shadow: -12px 0 40px rgb(0 0 0 / 18%);
     }
 
     /* 侧栏列 → 左侧离屏抽屉；宽度经 --dshmu-drawer-w 可配置（设置卡） */
+    [data-dshmu-mobile] > [data-dshmu-sidebar],
     [data-dshmu-mobile] > div:first-child {
       position: absolute !important;
       top: 0; bottom: 0; left: 0;
@@ -184,6 +188,7 @@ window.__ModuleLoader__.load({
         transform 320ms cubic-bezier(0.32, 0.72, 0, 1),
         box-shadow 320ms cubic-bezier(0.32, 0.72, 0, 1);
     }
+    [data-dshmu-mobile]:not([data-sidebar-collapsed]) > [data-dshmu-sidebar],
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > div:first-child {
       transform: translateX(0);
       box-shadow:
@@ -193,21 +198,28 @@ window.__ModuleLoader__.load({
     }
 
     /* 进入移动模式首帧禁用过渡（防闪动） */
+    [data-dshmu-mobile][data-dshmu-arming] > [data-dshmu-sidebar],
     [data-dshmu-mobile][data-dshmu-arming] > div:first-child,
+    [data-dshmu-mobile][data-dshmu-arming] > [data-dshmu-center],
     [data-dshmu-mobile][data-dshmu-arming] > div:nth-child(2) { transition: none !important; }
 
     /* 抽屉打开时中列景深收缩 */
+    [data-dshmu-mobile] > [data-dshmu-center],
     [data-dshmu-mobile] > div:nth-child(2) {
       transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
       transform-origin: left center;
       will-change: transform;
     }
+    [data-dshmu-mobile]:not([data-sidebar-collapsed]) > [data-dshmu-center],
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > div:nth-child(2) {
       transform: scale(0.96) translateX(3%);
     }
 
     /* 触屏隐藏拖拽手柄 */
     [data-dshmu-mobile] [data-side] { display: none !important; }
+
+    /* 输入栏模型选择器：隐藏模型名（sweepModelTriggers 打标，偏好可关） */
+    body[data-dshmu-touch] [data-dshmu-hide="model"] { display: none !important; }
 
     /* 遮罩：显隐完全由官方开合态状态机管辖 */
     [data-dshmu-mobile] .dshmu-backdrop {
@@ -463,6 +475,7 @@ window.__ModuleLoader__.load({
         optMono: "黑白主题", optMonoDesc: "全站 UI 灰阶化，light 黑主色 / dark 白主色",
         optWidth: "抽屉宽度", optWidthDesc: "侧栏抽屉展开宽度",
         optEdge: "左缘滑开手势", optEdgeDesc: "屏幕左缘右滑打开抽屉",
+        optHideModel: "隐藏模型名称", optHideModelDesc: "输入栏模型选择器只显示思考等级",
         wShort: "窄", wMid: "标准", wWide: "宽",
       },
       en: {
@@ -472,6 +485,7 @@ window.__ModuleLoader__.load({
         optMono: "Monochrome", optMonoDesc: "Grayscale UI; black accent on light, white on dark",
         optWidth: "Drawer width", optWidthDesc: "Expanded sidebar drawer width",
         optEdge: "Edge swipe", optEdgeDesc: "Swipe from left edge to open drawer",
+        optHideModel: "Hide model name", optHideModelDesc: "Composer model picker shows thinking level only",
         wShort: "N", wMid: "M", wWide: "W",
       },
     };
@@ -485,7 +499,7 @@ window.__ModuleLoader__.load({
 
     /* ---------- 用户偏好（localStorage 持久化，热应用） ---------- */
     const OPTS_KEY = "dshmu:opts";
-    const DEFAULT_OPTS = { monochrome: true, drawerW: 360, edgeSwipe: true };
+    const DEFAULT_OPTS = { monochrome: true, drawerW: 360, edgeSwipe: true, hideModel: true };
     const loadOpts = () => {
       try { return { ...DEFAULT_OPTS, ...JSON.parse(localStorage.getItem(OPTS_KEY) || "{}") }; }
       catch { return { ...DEFAULT_OPTS }; }
@@ -582,7 +596,9 @@ window.__ModuleLoader__.load({
       let ro = null;
       let drawerMo = null;
       let retries = 0;
-      const drawerEl = () => (frame && frame.isConnected ? frame.firstElementChild : null);
+      const drawerEl = () => (frame && frame.isConnected
+        ? (frame.querySelector(":scope > [data-dshmu-sidebar]") || frame.firstElementChild)
+        : null);
       const backdropEl = () => (typeof document === "undefined" ? null : document.querySelector(".dshmu-backdrop"));
       const matrixX = (el) => {
         try {
@@ -590,10 +606,36 @@ window.__ModuleLoader__.load({
           return Number.isFinite(m.m41) ? m.m41 : 0;
         } catch { return 0; }
       };
-      let drag = null;
       const findFrame = () => (typeof document === "undefined") ? null
         : (document.querySelector("div:has(> [data-shell-overlay])")
           || document.querySelector("[data-sidebar-collapsed], [data-details-collapsed]"));
+
+      /* ---------- 列标记：给侧栏/中列/详情列打 data-dshmu-* 属性 ----------
+       * 官方 hash 类名（如 pI_x6G_detailsCol）与列序随版本漂移，CSS 选择器
+       * 双通道兜底之一即此标记。只认 grid 列子元素（跳过 shell.overlay
+       * 挂载点等非列子节点），详情列优先按 *detailsCol* 类名包含匹配。 */
+      const tagColumns = () => {
+        if (frame === null || !frame.isConnected || typeof document === "undefined") return;
+        for (const el of frame.querySelectorAll("[data-dshmu-sidebar], [data-dshmu-center], [data-dshmu-details]")) {
+          el.removeAttribute("data-dshmu-sidebar");
+          el.removeAttribute("data-dshmu-center");
+          el.removeAttribute("data-dshmu-details");
+        }
+        const cols = Array.from(frame.children).filter((n) => n.nodeType === 1
+          && !n.hasAttribute("data-shell-overlay")
+          && !n.classList.contains("dshmu-backdrop")
+          && !n.classList.contains("dshmu-toggle"));
+        if (cols.length < 2) return;
+        cols[0].setAttribute("data-dshmu-sidebar", "");
+        cols[1].setAttribute("data-dshmu-center", "");
+        let det = cols.find((n) => /detailscol/i.test(String(n.className)));
+        if (det === undefined) {
+          const nested = frame.querySelector("[class*='detailsCol' i]");
+          if (nested !== null && !cols[0].contains(nested) && !cols[1].contains(nested)) det = nested;
+        }
+        if (det === undefined && cols.length >= 3) det = cols[2];
+        if (det !== undefined) det.setAttribute("data-dshmu-details", "");
+      };
 
       const resetDragVisual = () => {
         if (frame === null || !frame.isConnected) return;
@@ -604,6 +646,7 @@ window.__ModuleLoader__.load({
       };
       const syncDrawerState = () => {
         if (typeof document === "undefined") return;
+        tagColumns();
         document.body.toggleAttribute("data-dshmu-drawer-open", drawerOpen() || detailsOpen());
         drag = null;
         resetDragVisual();
@@ -637,6 +680,7 @@ window.__ModuleLoader__.load({
             drawerMo = new MutationObserver(syncDrawerState);
             drawerMo.observe(frame, { attributes: true, attributeFilter: ["data-sidebar-collapsed", "data-details-collapsed", "data-dshmu-mobile"] });
           }
+          tagColumns();
         }
         const ua = (typeof navigator !== "undefined" && navigator.userAgent) || "";
         const mobile = window.__dshmuForce === true
@@ -668,6 +712,51 @@ window.__ModuleLoader__.load({
       const onResize = () => applyMode();
       window.addEventListener("resize", onResize);
       window.__dshmuApplyMode = applyMode;
+
+      /* ---------- 输入栏模型选择器：隐藏模型名，只留思考等级 ----------
+       * 官方 ModelSelect 触发器类名形如 _<hash>_trigger（hash 随版本变化），
+       * 按该模式扫描触发器，再对触发器内匹配模型名特征的文本叶元素打
+       * data-dshmu-hide="model"（CSS 隐藏）。偏好可关；关闭/卸载即摘标。 */
+      const TRIGGER_CLASS_RE = /_[A-Za-z0-9]{4,12}_trigger\b/;
+      const MODEL_NAME_RE = /(deepseek|reasoner|\bv\d+(\.\d+)*)/i;
+      const hiddenByName = new Set();
+      const unhideModelNames = () => {
+        for (const el of hiddenByName) {
+          if (el.isConnected) el.removeAttribute("data-dshmu-hide");
+        }
+        hiddenByName.clear();
+      };
+      const sweepModelTriggers = () => {
+        if (typeof document === "undefined") return;
+        if (!document.body.hasAttribute("data-dshmu-touch") || !opts.hideModel) {
+          unhideModelNames();
+          return;
+        }
+        unhideModelNames();
+        for (const el of document.querySelectorAll('[class*="_trigger"]')) {
+          if (typeof el.className !== "string" || !TRIGGER_CLASS_RE.test(el.className)) continue;
+          for (const leaf of el.querySelectorAll("*")) {
+            if (leaf.children.length > 0) continue;
+            const text = (leaf.textContent || "").trim();
+            if (text !== "" && MODEL_NAME_RE.test(text)) {
+              leaf.setAttribute("data-dshmu-hide", "model");
+              hiddenByName.add(leaf);
+            }
+          }
+        }
+      };
+
+      // 自愈观察器：列重挂 / 触发器内容变化（切模型、切思考等级）时重扫
+      let sweepMo = null;
+      let sweepTimer = 0;
+      if (typeof MutationObserver !== "undefined") {
+        sweepMo = new MutationObserver(() => {
+          clearTimeout(sweepTimer);
+          sweepTimer = setTimeout(() => { tagColumns(); sweepModelTriggers(); }, 150);
+        });
+        sweepMo.observe(document.body, { childList: true, subtree: true, characterData: true });
+        sweepModelTriggers();
+      }
 
       /* ---------- ESC 关闭（详情优先） ---------- */
       const closeDetails = () => {
@@ -806,6 +895,7 @@ window.__ModuleLoader__.load({
               else tag.textContent = next ? CSS + "\n" + monoFallbackCss() : CSS;
             }
             if (key === "drawerW") applyWidth();
+            if (key === "hideModel") sweepModelTriggers();
           },
         });
         const segBtn = (val, label, on) => react.createElement("button", {
@@ -846,7 +936,12 @@ window.__ModuleLoader__.load({
             react.createElement("span", { className: "t" },
               react.createElement("b", null, t("optEdge")),
               react.createElement("span", null, t("optEdgeDesc"))),
-            sw("edgeSwipe", opts.edgeSwipe)));
+            sw("edgeSwipe", opts.edgeSwipe)),
+          react.createElement("div", { className: "dshmu-set-row" },
+            react.createElement("span", { className: "t" },
+              react.createElement("b", null, t("optHideModel")),
+              react.createElement("span", null, t("optHideModelDesc"))),
+            sw("hideModel", opts.hideModel)));
       }
 
       /* ---------- slot 注册 ---------- */
@@ -872,12 +967,20 @@ window.__ModuleLoader__.load({
           document.removeEventListener("touchcancel", onTouchEnd);
           if (ro !== null) ro.disconnect();
           if (drawerMo !== null) drawerMo.disconnect();
+          if (sweepMo !== null) sweepMo.disconnect();
+          clearTimeout(sweepTimer);
+          unhideModelNames();
           if (drag !== null) { resetDragVisual(); drag = null; }
           delete window.__dshmuApplyMode;
           if (frame !== null && frame.isConnected) {
             frame.removeAttribute("data-dshmu-mobile");
             frame.removeAttribute("data-dshmu-arming");
             frame.style.removeProperty("--dshmu-drawer-w");
+            for (const el of frame.querySelectorAll("[data-dshmu-sidebar], [data-dshmu-center], [data-dshmu-details]")) {
+              el.removeAttribute("data-dshmu-sidebar");
+              el.removeAttribute("data-dshmu-center");
+              el.removeAttribute("data-dshmu-details");
+            }
           }
           document.body.removeAttribute("data-dshmu-mobile");
           document.body.removeAttribute("data-dshmu-touch");
