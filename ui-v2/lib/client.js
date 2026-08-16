@@ -1,8 +1,8 @@
 // 浏览器端模块 v2：移动端抽屉布局 + 黑白主题 + 可配置设置卡。
 // 经 package.json 的 dsh.client manifest 由 DSH Web 模块系统加载。
 //
-// v2 与参考项目（dsh-client-ui-mobile）的差异化设计：
-//  - 设置弹窗：底部标签栏（thumb-friendly），参考项目为顶部横向滚动条
+// v2 设计要点：
+//  - 设置弹窗：底部标签栏（thumb-friendly）
 //  - 自有设置卡：经官方 settings.general.item 插槽注入，提供
 //    黑白主题开关 / 抽屉宽度 / 左缘手势开关，localStorage 持久化 + 热应用
 //  - 抽屉宽度可调：CSS 变量 --dshmu-drawer-w 驱动（300/360/420）
@@ -404,7 +404,7 @@ window.__ModuleLoader__.load({
 
     /* ------------------------------------------------------------
      * 设置弹窗（官方 SettingsRoot，body 级 portal）v2 重排：
-     * 全屏 + 大标题头 + 【底部标签栏】（拇指可达，区别于参考项目的
+     * 全屏 + 大标题头 + 【底部标签栏】（拇指可达，区别于 v1 的
      * 顶部横条方案）。hash 前缀（VOzbGW_/qSYn7G_）跨版本可能变化，
      * 每条规则均带 role=dialog / nth-child 结构兜底。
      * 作用域 body[data-dshmu-touch]（弹窗在 frame 外）。
