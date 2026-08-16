@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     var exports = module.exports;
     const react = require("react");
     // 本插件版本（与 package.json 保持同步；统计卡脚注展示用）
-    const VERSION = "0.4.19";
+    const VERSION = "0.4.20";
 
     /* ---------------------------------------------------------------
      * 黑白主题 token 表：--dsw-alias-* / --dsw-specific-* 的灰阶覆盖。
@@ -413,6 +413,24 @@ window.__ModuleLoader__.load({
     body[data-dshmu-touch] .qSYn7G_cards > *:nth-child(2) { animation-delay: 40ms; }
     body[data-dshmu-touch] .qSYn7G_cards > *:nth-child(3) { animation-delay: 80ms; }
     body[data-dshmu-touch] .qSYn7G_cards > *:nth-child(n+4) { animation-delay: 120ms; }
+
+    /* 切标签：官方 options 节块经 renderSlot(only: active) 整体重挂载，
+     * 入场 = 上滑 + 轻右移（页面切换感），子块级联。
+     * options = content 的最后一个子 div（hash 无关兜底）。 */
+    body[data-dshmu-touch] .VOzbGW_options > *,
+    body[data-dshmu-touch] [role="dialog"] > div:last-child > div:last-child > * {
+      animation: dshmu-page-in 300ms cubic-bezier(0.32, 0.72, 0, 1) both;
+    }
+    body[data-dshmu-touch] .VOzbGW_options > *:nth-child(2),
+    body[data-dshmu-touch] [role="dialog"] > div:last-child > div:last-child > *:nth-child(2) { animation-delay: 40ms; }
+    body[data-dshmu-touch] .VOzbGW_options > *:nth-child(3),
+    body[data-dshmu-touch] [role="dialog"] > div:last-child > div:last-child > *:nth-child(3) { animation-delay: 80ms; }
+    body[data-dshmu-touch] .VOzbGW_options > *:nth-child(n+4),
+    body[data-dshmu-touch] [role="dialog"] > div:last-child > div:last-child > *:nth-child(n+4) { animation-delay: 120ms; }
+    @keyframes dshmu-page-in {
+      from { opacity: 0; transform: translateX(16px) translateY(6px); }
+      to { opacity: 1; transform: none; }
+    }
     /* 系统降低动效偏好：全线关停（含官方弹窗被我们改形的入场） */
     @media (prefers-reduced-motion: reduce) {
       [data-dshmu-mobile] [class*="dshmu-"],
@@ -429,7 +447,11 @@ window.__ModuleLoader__.load({
       body[data-dshmu-touch] [role="menu"] [role="menuitem"],
       body[data-dshmu-touch] .VOzbGW_panel,
       body[data-dshmu-touch] .VOzbGW_content > *,
+      body[data-dshmu-touch] .VOzbGW_options > *,
+      body[data-dshmu-touch] [role="dialog"] > div:last-child > div:last-child > *,
       body[data-dshmu-touch] .VOzbGW_navCell,
+      body[data-dshmu-touch] .VOzbGW_navCell::after,
+      body[data-dshmu-touch] [role="dialog"] nav button::after,
       body[data-dshmu-touch] .qSYn7G_cards > *,
       body[data-dshmu-touch] [class$="_root"]:has(> [class$="_ledger"]) [class$="_details"] {
         animation: none !important;
@@ -567,6 +589,25 @@ window.__ModuleLoader__.load({
     body[data-dshmu-touch] .VOzbGW_navCell:nth-child(3) { animation-delay: 280ms; }
     body[data-dshmu-touch] .VOzbGW_navCell:nth-child(n+4) { animation-delay: 360ms; }
     body[data-dshmu-touch] .VOzbGW_navCell:active { transform: scale(0.92); opacity: 0.7; }
+    /* 激活标签指示条：官方切标签即写 aria-current（hash 无关），
+     * ::after 随属性出现 → 横向展开动画天然重放 */
+    body[data-dshmu-touch] .VOzbGW_navCell,
+    body[data-dshmu-touch] [role="dialog"] nav button { position: relative; }
+    body[data-dshmu-touch] .VOzbGW_navCell[aria-current="true"]::after,
+    body[data-dshmu-touch] [role="dialog"] nav button[aria-current="true"]::after {
+      content: "";
+      position: absolute;
+      top: 2px; left: 50%;
+      width: 16px; height: 3px;
+      border-radius: 2px;
+      background: var(--dsw-alias-label-primary, #000000);
+      transform: translateX(-50%) scaleX(0);
+      animation: dshmu-nav-pill 300ms cubic-bezier(0.34, 1.3, 0.5, 1) 60ms forwards;
+    }
+    @keyframes dshmu-nav-pill {
+      from { transform: translateX(-50%) scaleX(0); }
+      to { transform: translateX(-50%) scaleX(1); }
+    }
     /* 内容头：大标题 + 圆形关闭钮 */
     body[data-dshmu-touch] .VOzbGW_header { padding: 18px 18px 12px !important; }
     body[data-dshmu-touch] .VOzbGW_header .ht,
