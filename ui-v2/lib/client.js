@@ -243,6 +243,7 @@ window.__ModuleLoader__.load({
     }
     [data-dshmu-mobile] .dshmu-stats-chip svg { flex: none; opacity: 0.7; }
     [data-dshmu-mobile] .dshmu-stats-chip:active { background: var(--dsw-alias-interactive-bg-hover, rgb(0 0 0 / 6%)); }
+    [data-dshmu-mobile] .dshmu-stats-chip { animation: dshmu-pop 300ms cubic-bezier(0.32, 0.72, 0, 1) 60ms both; }
     [data-dshmu-mobile] .dshmu-stats-sheet {
       width: min(100%, 430px);
       border: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 8%));
@@ -251,12 +252,19 @@ window.__ModuleLoader__.load({
       box-shadow: 0 6px 24px rgb(0 0 0 / 8%);
       display: grid; grid-template-columns: 1fr 1fr;
       overflow: hidden;
-      animation: dshmu-fade-in 180ms ease;
+      transform-origin: 50% 100%;
+      animation: dshmu-sheet-up 260ms cubic-bezier(0.32, 0.72, 0, 1);
     }
     [data-dshmu-mobile] .dshmu-stats-cell {
       padding: 9px 14px 8px;
       border-top: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 6%));
+      animation: dshmu-rise 240ms cubic-bezier(0.32, 0.72, 0, 1) both;
     }
+    [data-dshmu-mobile] .dshmu-stats-cell:nth-child(1) { animation-delay: 30ms; }
+    [data-dshmu-mobile] .dshmu-stats-cell:nth-child(2) { animation-delay: 55ms; }
+    [data-dshmu-mobile] .dshmu-stats-cell:nth-child(3) { animation-delay: 80ms; }
+    [data-dshmu-mobile] .dshmu-stats-cell:nth-child(4) { animation-delay: 105ms; }
+    [data-dshmu-mobile] .dshmu-stats-cell:nth-child(n+5) { animation-delay: 130ms; }
     [data-dshmu-mobile] .dshmu-stats-cell:nth-child(-n+2) { border-top: none; }
     [data-dshmu-mobile] .dshmu-stats-cell:nth-child(odd) { border-right: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 6%)); }
     [data-dshmu-mobile] .dshmu-stats-cell b {
@@ -293,6 +301,35 @@ window.__ModuleLoader__.load({
     }
     @keyframes dshmu-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
+    /* ------------------------------------------------------------
+     * 动效系统（v0.4.8）：统一缓动 cubic-bezier(0.32,0.72,0,1)，
+     * 时长 180–380ms；所有入场动画仅作用于挂载瞬间，不复播。
+     * ---------------------------------------------------------- */
+    @keyframes dshmu-rise {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes dshmu-pop {
+      0% { opacity: 0; transform: scale(0.72); }
+      62% { opacity: 1; transform: scale(1.06); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes dshmu-sheet-up {
+      from { opacity: 0; transform: translateY(30px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    /* 系统降低动效偏好：全线关停（含官方弹窗被我们改形的入场） */
+    @media (prefers-reduced-motion: reduce) {
+      [data-dshmu-mobile] [class*="dshmu-"],
+      body[data-dshmu-touch] [class*="dshmu-"],
+      body[data-dshmu-touch] [role="dialog"],
+      body[data-dshmu-touch] .VOzbGW_panel,
+      body[data-dshmu-touch] .VOzbGW_navCell {
+        animation: none !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
     /* 抽屉打开期间锁定背景滚动。
        body 挂 data-dshmu-touch（绝不与 frame 的 data-dshmu-mobile 同名，
        否则遮罩后代选择器经 body 分支永远命中，关不掉）。 */
@@ -323,6 +360,9 @@ window.__ModuleLoader__.load({
       transform: scale(0.92);
       box-shadow: 0 1px 6px rgb(0 0 0 / 12%);
     }
+    [data-dshmu-mobile] .dshmu-toggle {
+      animation: dshmu-pop 340ms cubic-bezier(0.32, 0.72, 0, 1) 120ms both;
+    }
 
     /* 会话头部汉堡 */
     [data-dshmu-mobile] .dshmu-header-toggle {
@@ -340,6 +380,9 @@ window.__ModuleLoader__.load({
       transform: scale(0.9);
       background: var(--dsw-alias-interactive-bg-hover, rgb(0 0 0 / 6%));
     }
+    [data-dshmu-mobile] .dshmu-header-toggle {
+      animation: dshmu-pop 300ms cubic-bezier(0.32, 0.72, 0, 1) 60ms both;
+    }
 
     /* 触摸优化 */
     body[data-dshmu-touch] { overscroll-behavior-y: none; -webkit-text-size-adjust: 100%; }
@@ -355,13 +398,14 @@ window.__ModuleLoader__.load({
      * ---------------------------------------------------------- */
     /* 遮罩层拉满 */
     body[data-dshmu-touch] .VOzbGW_overlay { align-items: stretch !important; }
-    /* 面板全屏化 */
+    /* 面板全屏化（v0.4.8：整体自底部滑入，缓动与抽屉一致） */
     body[data-dshmu-touch] .VOzbGW_panel,
     body[data-dshmu-touch] [role="dialog"] {
       width: 100% !important; max-width: 100% !important;
       height: 100% !important; max-height: 100% !important;
       border-radius: 0 !important;
       flex-direction: column !important;
+      animation: dshmu-sheet-up 380ms cubic-bezier(0.32, 0.72, 0, 1);
     }
     /* 内容区在上（order 1），占满剩余高度 */
     body[data-dshmu-touch] .VOzbGW_content,
@@ -394,7 +438,8 @@ window.__ModuleLoader__.load({
       justify-content: space-around;
       padding: 6px 8px;
     }
-    /* 标签单元：等分、纵向堆叠（官方纯文本亦居中）、mono 大写小字 */
+    /* 标签单元：等分、纵向堆叠（官方纯文本亦居中）、mono 大写小字。
+       v0.4.8：交错浮现（80ms 步进）+ 按压回缩。 */
     body[data-dshmu-touch] .VOzbGW_navCell {
       flex: 1 1 0;
       display: flex; flex-direction: column;
@@ -408,7 +453,14 @@ window.__ModuleLoader__.load({
       text-transform: uppercase;
       white-space: nowrap;
       min-width: 0;
+      animation: dshmu-rise 300ms cubic-bezier(0.32, 0.72, 0, 1) both;
+      transition: transform 140ms cubic-bezier(0.32, 0.72, 0, 1), opacity 140ms;
     }
+    body[data-dshmu-touch] .VOzbGW_navCell:nth-child(1) { animation-delay: 120ms; }
+    body[data-dshmu-touch] .VOzbGW_navCell:nth-child(2) { animation-delay: 200ms; }
+    body[data-dshmu-touch] .VOzbGW_navCell:nth-child(3) { animation-delay: 280ms; }
+    body[data-dshmu-touch] .VOzbGW_navCell:nth-child(n+4) { animation-delay: 360ms; }
+    body[data-dshmu-touch] .VOzbGW_navCell:active { transform: scale(0.92); opacity: 0.7; }
     /* 内容头：大标题 + 圆形关闭钮 */
     body[data-dshmu-touch] .VOzbGW_header { padding: 18px 18px 12px !important; }
     body[data-dshmu-touch] .VOzbGW_header .ht,
@@ -461,7 +513,11 @@ window.__ModuleLoader__.load({
     .dshmu-set-row {
       display: flex; align-items: center; gap: 12px;
       padding: 11px 16px;
+      animation: dshmu-rise 280ms cubic-bezier(0.32, 0.72, 0, 1) both;
     }
+    .dshmu-set-row:nth-of-type(2) { animation-delay: 50ms; }
+    .dshmu-set-row:nth-of-type(3) { animation-delay: 100ms; }
+    .dshmu-set-row:nth-of-type(n+4) { animation-delay: 150ms; }
     .dshmu-set-row + .dshmu-set-row { border-top: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 8%)); }
     .dshmu-set-row .t { flex: 1; min-width: 0; }
     .dshmu-set-row b { display: block; font-size: 13px; font-weight: 600; }
@@ -482,7 +538,8 @@ window.__ModuleLoader__.load({
       position: absolute; top: 2px; left: 2px;
       width: 20px; height: 20px; border-radius: 50%;
       background: var(--dsw-alias-label-primary, #000000);
-      transition: left 180ms cubic-bezier(0.32, 0.72, 0, 1), background 180ms;
+      /* 弹性缓动：拇指快速到位后轻微回弹 */
+      transition: left 260ms cubic-bezier(0.34, 1.3, 0.5, 1), background 180ms;
     }
     .dshmu-sw[data-on="true"] {
       background: var(--dsw-alias-button-primary-fill, #000000);
@@ -507,9 +564,10 @@ window.__ModuleLoader__.load({
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 11px;
       color: var(--dsw-alias-label-tertiary, #737373);
-      transition: background 140ms, color 140ms;
+      transition: background 140ms, color 140ms, transform 140ms cubic-bezier(0.32, 0.72, 0, 1);
       -webkit-tap-highlight-color: transparent;
     }
+    .dshmu-seg button:active { transform: scale(0.93); }
     .dshmu-seg button + button { border-left: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 8%)); }
     .dshmu-seg button[data-on="true"] {
       background: var(--dsw-alias-label-primary, #000000);

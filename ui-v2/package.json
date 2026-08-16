@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-client-ui-mobile-mono",
-  "version": "0.4.7",
+  "version": "0.4.8",
   "description": "DSH Web mobile drawer layout + monochrome theme (ui-v2: bottom-tab settings, prefs card, hash-agnostic drawers)",
   "type": "module",
   "main": "lib/index.js",
