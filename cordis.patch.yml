@@ -1,0 +1,15 @@
+# dsh-client-ui-mobile-mono —— 移动端抽屉布局 + 黑白主题
+#
+# 方式 A：安装进 profile（推荐，install.sh 会自动写入下列行）
+#   ./install.sh
+#   生成内容：
+#     - insert:
+#         - id: ui-mobile-mono
+#           name: '@local/dsh-client-ui-mobile-mono'
+#
+# 方式 B：本地开发（deepseek-harness 仓库根目录，路径需为绝对路径，
+#         直接指向宿主入口 lib/index.js）
+#   pnpm dsh web --patch /absolute/path/to/dsh-mobile-ui/cordis.patch.yml
+- insert:
+    - id: ui-mobile-mono
+      name: '@local/dsh-client-ui-mobile-mono'
