@@ -164,8 +164,9 @@ window.__ModuleLoader__.load({
       border-left: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 8%));
       box-shadow: none; /* 关闭态零阴影：防出屏后阴影向屏内泄漏 */
       transform: translateX(102%);
-      /* 只过渡 transform（合成器动画）；box-shadow 过渡会逐帧重绘 */
-      transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
+      transition:
+        transform 320ms cubic-bezier(0.32, 0.72, 0, 1),
+        box-shadow 320ms cubic-bezier(0.32, 0.72, 0, 1);
     }
     [data-dshmu-mobile]:not([data-details-collapsed]) > [data-dshmu-details],
     [data-dshmu-mobile]:not([data-details-collapsed]) [class*="detailsCol" i] {
@@ -183,7 +184,9 @@ window.__ModuleLoader__.load({
       border-right: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 8%));
       box-shadow: none;
       transform: translateX(-102%);
-      transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
+      transition:
+        transform 320ms cubic-bezier(0.32, 0.72, 0, 1),
+        box-shadow 320ms cubic-bezier(0.32, 0.72, 0, 1);
     }
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > [data-dshmu-sidebar],
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > div:first-child {
@@ -200,11 +203,12 @@ window.__ModuleLoader__.load({
     [data-dshmu-mobile][data-dshmu-arming] > [data-dshmu-center],
     [data-dshmu-mobile][data-dshmu-arming] > div:nth-child(2) { transition: none !important; }
 
-    /* 抽屉打开时中列景深收缩（不用 will-change：常态驻层在低端机反噬） */
+    /* 抽屉打开时中列景深收缩 */
     [data-dshmu-mobile] > [data-dshmu-center],
     [data-dshmu-mobile] > div:nth-child(2) {
       transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
       transform-origin: left center;
+      will-change: transform;
     }
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > [data-dshmu-center],
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > div:nth-child(2) {
@@ -217,14 +221,14 @@ window.__ModuleLoader__.load({
     /* 输入栏模型选择器：隐藏模型名（sweepModelTriggers 打标，偏好可关） */
     body[data-dshmu-touch] [data-dshmu-hide="model"] { display: none !important; }
 
-    /* 遮罩：显隐完全由官方开合态状态机管辖。
-       性能：不用 backdrop-filter —— 全屏 blur 在移动端 WebView 是抽屉
-       卡顿的头号来源（每帧全屏重采样）；纯 rgba 层零开销。 */
+    /* 遮罩：显隐完全由官方开合态状态机管辖 */
     [data-dshmu-mobile] .dshmu-backdrop {
       display: none;
       position: absolute; inset: 0;
       z-index: 25;
-      background: rgb(0 0 0 / 48%);
+      background: rgb(0 0 0 / 42%);
+      -webkit-backdrop-filter: blur(10px) saturate(0.9);
+      backdrop-filter: blur(10px) saturate(0.9);
     }
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) .dshmu-backdrop,
     [data-dshmu-mobile]:not([data-details-collapsed]) .dshmu-backdrop {
@@ -233,7 +237,7 @@ window.__ModuleLoader__.load({
     }
     [data-dshmu-mobile][data-dshmu-dragging] .dshmu-backdrop {
       display: block;
-      opacity: 1; /* 拖拽透明度由 JS 直写 style.opacity（见 onTouchMove） */
+      opacity: var(--dshmu-progress, 1);
       animation: none;
     }
     @keyframes dshmu-fade-in { from { opacity: 0; } to { opacity: 1; } }
@@ -243,9 +247,7 @@ window.__ModuleLoader__.load({
        否则遮罩后代选择器经 body 分支永远命中，关不掉）。 */
     body[data-dshmu-touch][data-dshmu-drawer-open] { overflow: hidden; }
 
-    /* 浮动汉堡（hero / 无会话画面）。
-       性能：不透明实底 + 静态阴影 —— backdrop-filter 会让首页动态背景
-       每帧重采样该按钮后方区域，整页跟着掉帧（首页卡顿主因）。 */
+    /* 浮动汉堡（hero / 无会话画面）：毛玻璃浮层按钮 */
     [data-dshmu-mobile] .dshmu-toggle {
       display: inline-flex;
       position: absolute;
@@ -257,14 +259,18 @@ window.__ModuleLoader__.load({
       border-radius: 13px;
       border: 1px solid var(--dsw-alias-border-l2, rgb(0 0 0 / 12%));
       background: var(--dsw-alias-bg-layer-1, #ffffff);
+      background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, #ffffff) 74%, transparent);
+      -webkit-backdrop-filter: blur(16px) saturate(1.2);
+      backdrop-filter: blur(16px) saturate(1.2);
       color: var(--dsw-alias-label-primary, #0f1115);
-      box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
+      box-shadow: 0 2px 10px rgb(0 0 0 / 10%), 0 12px 32px rgb(0 0 0 / 12%);
       cursor: pointer; padding: 0;
       -webkit-tap-highlight-color: transparent;
-      transition: transform 160ms cubic-bezier(0.32, 0.72, 0, 1);
+      transition: transform 160ms cubic-bezier(0.32, 0.72, 0, 1), box-shadow 160ms ease;
     }
     [data-dshmu-mobile] .dshmu-toggle:active {
       transform: scale(0.92);
+      box-shadow: 0 1px 6px rgb(0 0 0 / 12%);
     }
 
     /* 会话头部汉堡 */
@@ -608,42 +614,35 @@ window.__ModuleLoader__.load({
        * 官方 hash 类名（如 pI_x6G_detailsCol）与列序随版本漂移，CSS 选择器
        * 双通道兜底之一即此标记。只认 grid 列子元素（跳过 shell.overlay
        * 挂载点等非列子节点），详情列优先按 *detailsCol* 类名包含匹配。 */
-      let taggedCols = null; // [sidebar, center, details] 指纹：命中即跳过重打
       const tagColumns = () => {
         if (frame === null || !frame.isConnected || typeof document === "undefined") return;
+        for (const el of frame.querySelectorAll("[data-dshmu-sidebar], [data-dshmu-center], [data-dshmu-details]")) {
+          el.removeAttribute("data-dshmu-sidebar");
+          el.removeAttribute("data-dshmu-center");
+          el.removeAttribute("data-dshmu-details");
+        }
         const cols = Array.from(frame.children).filter((n) => n.nodeType === 1
           && !n.hasAttribute("data-shell-overlay")
           && !n.classList.contains("dshmu-backdrop")
           && !n.classList.contains("dshmu-toggle"));
-        if (cols.length < 2) { taggedCols = null; return; }
+        if (cols.length < 2) return;
+        cols[0].setAttribute("data-dshmu-sidebar", "");
+        cols[1].setAttribute("data-dshmu-center", "");
         let det = cols.find((n) => /detailscol/i.test(String(n.className)));
         if (det === undefined) {
           const nested = frame.querySelector("[class*='detailsCol' i]");
           if (nested !== null && !cols[0].contains(nested) && !cols[1].contains(nested)) det = nested;
         }
         if (det === undefined && cols.length >= 3) det = cols[2];
-        // 指纹未变（同一组元素、同样角色）→ 跳过，避免高频摘挂属性触发重排
-        if (taggedCols !== null
-          && taggedCols[0] === cols[0] && taggedCols[1] === cols[1]
-          && taggedCols[2] === (det || null)) return;
-        for (const el of frame.querySelectorAll("[data-dshmu-sidebar], [data-dshmu-center], [data-dshmu-details]")) {
-          el.removeAttribute("data-dshmu-sidebar");
-          el.removeAttribute("data-dshmu-center");
-          el.removeAttribute("data-dshmu-details");
-        }
-        cols[0].setAttribute("data-dshmu-sidebar", "");
-        cols[1].setAttribute("data-dshmu-center", "");
         if (det !== undefined) det.setAttribute("data-dshmu-details", "");
-        taggedCols = [cols[0], cols[1], det || null];
       };
 
       const resetDragVisual = () => {
         if (frame === null || !frame.isConnected) return;
+        frame.style.removeProperty("--dshmu-progress");
         frame.removeAttribute("data-dshmu-dragging");
         const sb = drawerEl();
         if (sb !== null) { sb.style.transition = ""; sb.style.transform = ""; }
-        const bd = backdropEl();
-        if (bd !== null) bd.style.opacity = "";
       };
       const syncDrawerState = () => {
         if (typeof document === "undefined") return;
@@ -679,39 +678,23 @@ window.__ModuleLoader__.load({
           }
           if (drawerMo === null && typeof MutationObserver !== "undefined") {
             drawerMo = new MutationObserver(syncDrawerState);
-            // childList（不带 subtree）= 只看 frame 直接子级 = 列挂载/卸载，
-            // 不会因抽屉内部内容刷新而触发
-            drawerMo.observe(frame, {
-              childList: true,
-              attributes: true,
-              attributeFilter: ["data-sidebar-collapsed", "data-details-collapsed", "data-dshmu-mobile"],
-            });
+            drawerMo.observe(frame, { attributes: true, attributeFilter: ["data-sidebar-collapsed", "data-details-collapsed", "data-dshmu-mobile"] });
           }
           tagColumns();
         }
         const ua = (typeof navigator !== "undefined" && navigator.userAgent) || "";
-        // 排查开关：localStorage.setItem("dshmu:disable","1") 后刷新 →
-        // 本插件完全休眠（等价未安装）；仍卡 ⇒ 卡顿与本插件无关。
-        let hardDisabled = false;
-        try { hardDisabled = localStorage.getItem("dshmu:disable") === "1"; } catch { /* ignore */ }
-        const mobile = hardDisabled || window.__dshmuDisable === true ? false
-          : (window.__dshmuForce === true
-            || /Android|iPhone|iPod|iPad|Windows Phone|Mobile/i.test(ua));
+        const mobile = window.__dshmuForce === true
+          || /Android|iPhone|iPod|iPad|Windows Phone|Mobile/i.test(ua);
         if (mobile) {
-          const wasMobile = frame.hasAttribute("data-dshmu-mobile");
-          if (!wasMobile) {
+          if (!frame.hasAttribute("data-dshmu-mobile")) {
             frame.setAttribute("data-dshmu-arming", "");
             requestAnimationFrame(() => requestAnimationFrame(() => {
               frame.removeAttribute("data-dshmu-arming");
               syncDrawerState();
             }));
           }
-          // 幂等写入：地址栏伸缩等 resize 风暴下不重复设同名属性，
-          // 避免惊醒 MutationObserver 级联（首页卡顿帮凶）
-          if (!wasMobile) frame.setAttribute("data-dshmu-mobile", "");
-          if (!document.body.hasAttribute("data-dshmu-touch")) {
-            document.body.setAttribute("data-dshmu-touch", "");
-          }
+          frame.setAttribute("data-dshmu-mobile", "");
+          document.body.setAttribute("data-dshmu-touch", "");
           applyWidth();
           if (!detailsAutoClosed && layout !== undefined) {
             layout.closeDetails();
@@ -763,47 +746,17 @@ window.__ModuleLoader__.load({
         }
       };
 
-      // 自愈（轮询版，零 MutationObserver）：body subtree 观察器在首页
-      // 动画 / 流式输出下每个 React commit 都进回调并逐节点 querySelector，
-      // 低端机持续掉帧。改为：click 兜底（打开/切换菜单必然点击）+
-      // 1.5s 轻量轮询 —— 轮询先做一次早退探测（querySelector 命中首个
-      // trigger 即返回），仅在隐藏文本指纹变化时才跑逐叶扫描。
+      // 自愈观察器：列重挂 / 触发器内容变化（切模型、切思考等级）时重扫
+      let sweepMo = null;
       let sweepTimer = 0;
-      let sweepIv = 0;
-      let lastHiddenSig = "";
-      const hiddenSig = () => {
-        let s = "";
-        for (const el of hiddenByName) s += (el.textContent || "") + "\u0001";
-        return s;
-      };
-      const runSweep = () => {
-        if (drag !== null) return;
+      if (typeof MutationObserver !== "undefined") {
+        sweepMo = new MutationObserver(() => {
+          clearTimeout(sweepTimer);
+          sweepTimer = setTimeout(() => { tagColumns(); sweepModelTriggers(); }, 150);
+        });
+        sweepMo.observe(document.body, { childList: true, subtree: true, characterData: true });
         sweepModelTriggers();
-        lastHiddenSig = hiddenSig();
-      };
-      const scheduleSweep = () => {
-        if (sweepTimer !== 0) return;
-        sweepTimer = setTimeout(() => {
-          sweepTimer = 0;
-          runSweep();
-        }, 250);
-      };
-      const pollSweep = () => {
-        if (drag !== null) return;
-        if (!document.body.hasAttribute("data-dshmu-touch") || !opts.hideModel) {
-          if (hiddenByName.size > 0) runSweep();
-          return;
-        }
-        // 早退探测：无 trigger（如首页无输入栏）时一次 querySelector 即返回
-        if (document.querySelector('[class*="_trigger"]') === null) {
-          if (hiddenByName.size > 0) runSweep();
-          return;
-        }
-        if (hiddenSig() !== lastHiddenSig) runSweep();
-      };
-      runSweep();
-      document.addEventListener("click", scheduleSweep, true);
-      sweepIv = setInterval(pollSweep, 1500);
+      }
 
       /* ---------- ESC 关闭（详情优先） ---------- */
       const closeDetails = () => {
@@ -853,8 +806,7 @@ window.__ModuleLoader__.load({
         if (drag.fromClosed) x -= w;
         x = Math.min(0, Math.max(-w, x));
         sb.style.transform = `translateX(${x}px)`;
-        const bd = backdropEl();
-        if (bd !== null) bd.style.opacity = String(Math.max(0, Math.min(1, 1 + x / w)));
+        frame.style.setProperty("--dshmu-progress", String(Math.max(0, Math.min(1, 1 + x / w))));
         if (Math.abs(t0.clientX - drag.x0) > 10 && e.cancelable) e.preventDefault();
       };
       const onTouchEnd = () => {
@@ -1015,9 +967,8 @@ window.__ModuleLoader__.load({
           document.removeEventListener("touchcancel", onTouchEnd);
           if (ro !== null) ro.disconnect();
           if (drawerMo !== null) drawerMo.disconnect();
-          if (sweepIv !== 0) clearInterval(sweepIv);
+          if (sweepMo !== null) sweepMo.disconnect();
           clearTimeout(sweepTimer);
-          document.removeEventListener("click", scheduleSweep, true);
           unhideModelNames();
           if (drag !== null) { resetDragVisual(); drag = null; }
           delete window.__dshmuApplyMode;
