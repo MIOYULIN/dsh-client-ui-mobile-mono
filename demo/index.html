@@ -356,6 +356,62 @@
   .sb-body::-webkit-scrollbar, .demo-flow::-webkit-scrollbar, .demo-details::-webkit-scrollbar { width: 4px; }
   .sb-body::-webkit-scrollbar-thumb, .demo-flow::-webkit-scrollbar-thumb, .demo-details::-webkit-scrollbar-thumb { border-radius: 2px; background: var(--line-2); }
 
+  /* ---------------- 设置弹窗（复刻官方 SettingsRoot 结构） ---------------- */
+  .VOzbGW_overlay {
+    position: fixed; inset: 0; z-index: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .VOzbGW_overlay[hidden] { display: none; }
+  .VOzbGW_mask { position: absolute; inset: 0; background: rgb(0 0 0 / 45%); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+  .VOzbGW_panel {
+    position: relative; display: flex; flex-direction: row;
+    width: 800px; max-width: calc(100vw - 48px);
+    height: min(800px, 100vh - 48px);
+    background: var(--surface); border-radius: 20px;
+    border: 1px solid var(--line);
+    box-shadow: 0 24px 80px rgb(0 0 0 / 35%);
+    overflow: hidden;
+  }
+  .VOzbGW_nav {
+    display: flex; flex-direction: column; width: 188px; flex: none;
+    border-right: 1px solid var(--line); padding: 14px 8px; gap: 2px;
+    background: var(--surface-2);
+  }
+  .VOzbGW_navTitle { font-size: 15px; font-weight: 700; padding: 4px 10px 10px; }
+  .VOzbGW_navList { display: flex; flex-direction: column; gap: 2px; }
+  .VOzbGW_navCell {
+    padding: 9px 12px; border-radius: 10px; font-size: 13.5px; color: var(--fg-2);
+    cursor: pointer; white-space: nowrap;
+  }
+  .VOzbGW_navCell:hover { background: var(--surface-3); color: var(--fg); }
+  .VOzbGW_navCell.on { background: var(--accent); color: var(--accent-inv); }
+  .VOzbGW_rail { margin-top: auto; padding: 10px; font-family: ui-monospace, Menlo, monospace; font-size: 9.5px; color: var(--fg-3); }
+  .VOzbGW_content { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+  .VOzbGW_header { display: flex; align-items: center; padding: 14px 16px; border-bottom: 1px solid var(--line); }
+  .VOzbGW_header .ht { font-size: 16px; font-weight: 700; flex: 1; }
+  .VOzbGW_actions { display: flex; }
+  .VOzbGW_close {
+    width: 32px; height: 32px; border: none; border-radius: 10px; background: none;
+    color: var(--fg-2); font-size: 15px; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .VOzbGW_close:active { background: var(--surface-2); transform: scale(.9); }
+  .VOzbGW_options { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+  .VOzbGW_opt {
+    display: flex; align-items: center; gap: 12px; padding: 13px 14px;
+    background: var(--surface-2); border-radius: 13px;
+  }
+  .VOzbGW_opt .t { flex: 1; }
+  .VOzbGW_opt .t b { display: block; font-size: 14px; font-weight: 600; }
+  .VOzbGW_opt .t span { font-size: 12px; color: var(--fg-2); }
+  .VOzbGW_switch { width: 42px; height: 25px; border-radius: 999px; background: var(--surface-3); border: 1px solid var(--line-2); position: relative; flex: none; }
+  .VOzbGW_switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 19px; height: 19px; border-radius: 50%; background: var(--fg); transition: left .18s cubic-bezier(.32,.72,0,1); }
+  .VOzbGW_switch.on { background: var(--accent); border-color: transparent; }
+  .VOzbGW_switch.on::after { left: 19px; background: var(--accent-inv); }
+  .qSYn7G_cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .qSYn7G_card { background: var(--surface-2); border: 1px solid var(--line); border-radius: 13px; padding: 13px 14px; }
+  .qSYn7G_card b { font-size: 13.5px; }
+  .qSYn7G_card p { font-size: 11.5px; color: var(--fg-2); margin-top: 3px; }
+
   /* ---------------- 演示控制条（右上，玻璃） ---------------- */
   .toolbar { position: fixed; top: 16px; right: 16px; z-index: 999; display: flex; gap: 8px; }
   .toolbar button {
@@ -467,13 +523,52 @@
 
     <div class="homebar"></div>
   </div>
-  <div class="stage-caption">dsh-client-ui-mobile-mono <span class="cap-chip">v0.2.1</span> drawer × monochrome</div>
+  <div class="stage-caption">dsh-client-ui-mobile-mono <span class="cap-chip">v0.3.0</span> drawer × monochrome</div>
 </div>
 
 <div class="toolbar">
   <button id="btnMode" title="切换 light / dark"><span class="led"></span>Theme</button>
   <button id="btnForce" title="强制移动模式（桌面预览抽屉）"><span class="led"></span>Mobile</button>
+  <button id="btnSettings" title="打开设置弹窗（官方 SettingsRoot 结构）"><span class="led"></span>Settings</button>
   <button id="btnUnload" title="卸载插件并回滚全部注入"><span class="led"></span>Eject</button>
+</div>
+
+<!-- 设置弹窗：复刻官方 SettingsRoot DOM（VOzbGW_ hash 类 + role=dialog 结构，
+     插件移动端 CSS 会把它重排为全屏 + 横向导航） -->
+<div class="VOzbGW_overlay" id="settingsOverlay" hidden>
+  <div class="VOzbGW_mask" id="settingsMask"></div>
+  <div class="VOzbGW_panel" role="dialog" aria-label="设置">
+    <div class="VOzbGW_nav">
+      <div class="VOzbGW_navTitle">设置</div>
+      <div class="VOzbGW_navList" id="settingsNav">
+        <div class="VOzbGW_navCell on">通用</div>
+        <div class="VOzbGW_navCell">外观</div>
+        <div class="VOzbGW_navCell">插件</div>
+        <div class="VOzbGW_navCell">工具</div>
+        <div class="VOzbGW_navCell">关于</div>
+      </div>
+      <div class="VOzbGW_rail">DSH ® v0.1.0-rc.6</div>
+    </div>
+    <div class="VOzbGW_content">
+      <div class="VOzbGW_header">
+        <span class="ht" id="settingsTitle">通用</span>
+        <span class="VOzbGW_actions"><button class="VOzbGW_close" id="settingsClose" aria-label="关闭设置">✕</button></span>
+      </div>
+      <div class="VOzbGW_options">
+        <div class="VOzbGW_opt"><span class="t"><b>回车键发送</b><span>手机软键盘回车直接发送消息</span></span><span class="VOzbGW_switch on"></span></div>
+        <div class="VOzbGW_opt"><span class="t"><b>AI 头像</b><span>对话中显示 AI 身份标识</span></span><span class="VOzbGW_switch"></span></div>
+        <div class="VOzbGW_opt"><span class="t"><b>用户头像</b><span>对话中显示用户身份标识</span></span><span class="VOzbGW_switch on"></span></div>
+        <div class="VOzbGW_opt"><span class="t"><b>聊天背景</b><span>自定义会话背景图案</span></span><span class="VOzbGW_switch"></span></div>
+        <div class="VOzbGW_opt"><span class="t"><b>跟随系统主题</b><span>light / dark 随系统切换</span></span><span class="VOzbGW_switch on"></span></div>
+        <div class="qSYn7G_cards">
+          <div class="qSYn7G_card"><b>web-search</b><p>联网搜索，回答前先检索</p></div>
+          <div class="qSYn7G_card"><b>fs-write</b><p>受限文件写入工具</p></div>
+          <div class="qSYn7G_card"><b>mobile-mono</b><p>本插件：抽屉布局 + 黑白主题</p></div>
+          <div class="qSYn7G_card"><b>stats-dock</b><p>会话统计折叠条</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script type="module">
@@ -672,10 +767,26 @@ $("#btnDetails").onclick = () => { detailsOpen = !detailsOpen; render(); };
 
 // 手机壳外（舞台装饰区）点击 = 遮罩语义：移动模式下关闭抽屉
 document.querySelector(".stage").addEventListener("click", (e) => {
-  if (document.body.hasAttribute('data-dshmu-touch') && sidebarOpen && !e.target.closest(".device")) {
+  if (document.body.hasAttribute("data-dshmu-touch") && sidebarOpen && !e.target.closest(".device")) {
     services.layout.closeSidebar();
   }
 });
+
+// 设置弹窗：工具栏按钮 / 侧栏齿轮 开，遮罩或 ✕ 关；navCell 切换标题
+const settingsOverlay = $("#settingsOverlay");
+const openSettings = () => { settingsOverlay.hidden = false; };
+const closeSettings = () => { settingsOverlay.hidden = true; };
+$("#btnSettings").onclick = openSettings;
+document.querySelector(".sb-head .iconbtn").addEventListener("click", openSettings);
+$("#settingsClose").onclick = closeSettings;
+$("#settingsMask").onclick = closeSettings;
+$("#settingsNav").addEventListener("click", (e) => {
+  const cell = e.target.closest(".VOzbGW_navCell");
+  if (!cell) return;
+  $("#settingsNav").querySelectorAll(".VOzbGW_navCell").forEach((c) => c.classList.toggle("on", c === cell));
+  $("#settingsTitle").textContent = cell.textContent;
+});
+window.addEventListener("keydown", (e) => { if (e.key === "Escape" && !settingsOverlay.hidden) closeSettings(); });
 
 function doSend() {
   const text = input.value.trim();

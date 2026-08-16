@@ -1,7 +1,7 @@
 {
   "name": "@local/dsh-client-ui-mobile-mono",
   "description": "DSH Web UI mobile drawer layout + monochrome (black & white) theme (user-installed, auto-loads at boot)",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
