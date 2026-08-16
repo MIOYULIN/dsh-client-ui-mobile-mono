@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     var exports = module.exports;
     const react = require("react");
     // 本插件版本（与 package.json 保持同步；统计卡脚注展示用）
-    const VERSION = "0.4.14";
+    const VERSION = "0.4.15";
 
     /* ---------------------------------------------------------------
      * 黑白主题 token 表：--dsw-alias-* / --dsw-specific-* 的灰阶覆盖。
@@ -251,7 +251,8 @@ window.__ModuleLoader__.load({
       border: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 8%));
       border-radius: 16px;
       background: var(--dsw-alias-bg-layer-1, #ffffff);
-      box-shadow: 0 6px 24px rgb(0 0 0 / 8%);
+      /* 无阴影：大模糊半径阴影在移动端点击/按压时反复重绘会闪烁 */
+      box-shadow: none;
       display: grid; grid-template-columns: 1fr 1fr;
       overflow: hidden;
       transform-origin: 50% 100%;
@@ -414,8 +415,7 @@ window.__ModuleLoader__.load({
       body[data-dshmu-touch] .VOzbGW_content > *,
       body[data-dshmu-touch] .VOzbGW_navCell,
       body[data-dshmu-touch] .qSYn7G_cards > *,
-      body[data-dshmu-touch] [class$="_root"]:has(> [class$="_ledger"]) [class$="_details"],
-      body[data-dshmu-touch] [class$="_panel"]:has(> [class$="_bar"] [class$="_segment"]) {
+      body[data-dshmu-touch] [class$="_root"]:has(> [class$="_ledger"]) [class$="_details"] {
         animation: none !important;
         transition-duration: 0.01ms !important;
       }
@@ -728,34 +728,15 @@ window.__ModuleLoader__.load({
     }
 
     /* ------------------------------------------------------------
-     * 上下文统计环（composer 工具行内，hash 无关 $= + :has 结构签名）：
-     * 官方触发器仅 28px、弹层 264px 绝对定位于环上方 —— 窄屏下触发器
-     * 难点中、弹层易被 composer 圆角容器裁切或贴穿屏缘。
-     * 触发器放大为触摸目标；弹层转固定定位底部 sheet（含安全区）。
+     * 上下文统计环（composer 工具行内）：官方 28px 环 + 264px 小弹层
+     * 在窄屏反复适配不佳 → 移动端整体隐藏，数据收进折叠统计卡
+     * （StatsFold 读同一 contextPressure/contextBreakdown 投影）。
+     * 签名：root 直接子 trigger，trigger 直接子 svg 内含 _track 圆
+     * （环形轨道仅在 SVG 里出现，不会误伤模型选择器等 _trigger）。
      * ---------------------------------------------------------- */
-    body[data-dshmu-touch] [class$="_trigger"]:has([class$="_track"]) {
-      width: 34px; height: 34px;
-      transition: transform 140ms cubic-bezier(0.32, 0.72, 0, 1);
+    body[data-dshmu-touch] [class$="_root"]:has(> [class$="_trigger"] > svg [class$="_track"]) {
+      display: none !important;
     }
-    body[data-dshmu-touch] [class$="_trigger"]:has([class$="_track"]):active {
-      transform: scale(0.88);
-    }
-    body[data-dshmu-touch] [class$="_panel"]:has(> [class$="_bar"] [class$="_segment"]) {
-      position: fixed;
-      left: 10px; right: 10px;
-      bottom: calc(16px + var(--dsh-composer-height, 170px) + env(safe-area-inset-bottom, 0px));
-      width: auto; max-width: 430px;
-      margin: 0 auto;
-      border-radius: 16px;
-      padding: 14px 16px calc(14px + env(safe-area-inset-bottom, 0px));
-      font-size: 13px; line-height: 22px;
-      box-shadow: 0 12px 40px rgb(0 0 0 / 20%), 0 0 0 1px var(--dsw-alias-border-l1, rgb(0 0 0 / 8%));
-      animation: dshmu-sheet-up 280ms cubic-bezier(0.32, 0.72, 0, 1);
-    }
-    /* 分段条与图例行加大为可读触摸尺寸 */
-    body[data-dshmu-touch] [class$="_panel"]:has(> [class$="_bar"] [class$="_segment"]) [class$="_bar"] { height: 6px; margin: 12px 0 14px; }
-    body[data-dshmu-touch] [class$="_panel"]:has(> [class$="_bar"] [class$="_segment"]) [class$="_row"] { padding: 5px 0; }
-    body[data-dshmu-touch] [class$="_panel"]:has(> [class$="_bar"] [class$="_segment"]) [class$="_swatch"] { width: 10px; height: 10px; }
     `;
 
     /* ---------- 中英双语文案 ---------- */
@@ -770,6 +751,7 @@ window.__ModuleLoader__.load({
         optHideModel: "隐藏模型名称", optHideModelDesc: "输入栏模型选择器只显示思考等级",
         stTurns: "轮次", stLLM: "LLM 耗时", stTool: "工具调用", stTTFT: "首字延迟",
         stTPS: "解码速度", stCache: "缓存命中", stTokens: "上下文 / 输出",
+        stCtx: "上下文占用",
         stExpand: "展开统计", stCollapse: "收起统计",
         wShort: "窄", wMid: "标准", wWide: "宽",
       },
@@ -783,6 +765,7 @@ window.__ModuleLoader__.load({
         optHideModel: "Hide model name", optHideModelDesc: "Composer model picker shows thinking level only",
         stTurns: "Turns", stLLM: "LLM time", stTool: "Tool calls", stTTFT: "TTFT",
         stTPS: "Decode speed", stCache: "Cache hit", stTokens: "Context / out",
+        stCtx: "Context used",
         stExpand: "Expand stats", stCollapse: "Collapse stats",
         wShort: "N", wMid: "M", wWide: "W",
       },
@@ -1244,6 +1227,14 @@ window.__ModuleLoader__.load({
         const proj = typeof props.useProjection === "function" ? props.useProjection : null;
         const usage = proj ? proj("tokenUsage") : undefined;
         const projected = proj ? proj("sessionStats") : undefined;
+        /* 上下文占用（与官方 composer 内 ContextMeter 同源投影）：
+         * percent = used/contextWindow；环已移动端隐藏，数据并入本卡 */
+        const pressure = proj ? proj("contextPressure") : undefined;
+        const ctxUsed = pressure !== undefined && pressure !== null
+          ? (pressure.projectedTokens ?? pressure.pressureTokens) : undefined;
+        const ctxWindow = pressure !== undefined && pressure !== null ? pressure.contextWindow : undefined;
+        const ctxPct = ctxUsed !== undefined && ctxWindow
+          ? Math.min(100, Math.round(ctxUsed / ctxWindow * 100)) : null;
         const nodes = typeof props.useSession === "function"
           ? props.useSession((s) => (s && s.chat && s.chat.legacy ? s.chat.legacy.nodes : []))
           : [];
@@ -1252,7 +1243,7 @@ window.__ModuleLoader__.load({
         const billed = usage !== undefined && usage !== null
           ? usage.uncachedInputTokens + usage.cacheReadTokens + usage.cacheWriteTokens : 0;
         const hasUsage = billed > 0 || (usage !== undefined && usage !== null && usage.outputTokens > 0);
-        if (!hasStats && !hasUsage) return null;
+        if (!hasStats && !hasUsage && ctxPct === null) return null;
         const totalMs = (stats ? stats.llmMs + stats.toolMs : 0) || 0;
         const cells = [];
         const cell = (label, value) => cells.push(react.createElement("div", { key: label, className: "dshmu-stats-cell" },
@@ -1271,6 +1262,7 @@ window.__ModuleLoader__.load({
           if (billed > 0) cell(t("stCache"), `${Math.round(usage.cacheReadTokens / billed * 100)}%`);
           cell(t("stTokens"), `${fmtTok(billed)} / ${fmtTok(usage.outputTokens)}`);
         }
+        if (ctxPct !== null) cell(t("stCtx"), `${ctxPct}% · ${fmtTok(ctxUsed)} / ${fmtTok(ctxWindow)}`);
         // 版本脚注：填满统计卡尾部空白（MONO = mobile-mono，呼应包名与黑白设计语言）
         cells.push(react.createElement("div", { key: "__vers", className: "dshmu-stats-vers" },
           `MONO · v${VERSION}`));
