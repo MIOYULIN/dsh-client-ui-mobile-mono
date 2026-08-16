@@ -34,7 +34,7 @@ Restart DSH, then hard-refresh (Ctrl/Cmd+Shift+R) the Web UI in your phone brows
 
 Uninstall: `./uninstall.sh` · Local dev: `pnpm dsh web --patch /abs/path/dsh-client-ui-mobile-mono/ui-v2/cordis.patch.yml`
 
-Plugin source: [`ui-v2/lib/client.js`](./ui-v2/lib/client.js) · Details: [ui-v2/README.md](./ui-v2/README.md)
+Plugin source: [`ui-v2/lib/client.js`](./ui-v2/lib/client.js) · Details: [ui-v2/README.md](./ui-v2/README.md) · Maintainer guide: [MAINTAINING.md](./MAINTAINING.md)
 
 ## Compatibility 兼容性
 

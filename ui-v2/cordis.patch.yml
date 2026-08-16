@@ -11,7 +11,7 @@
 #         直接指向宿主入口 lib/index.js）
 #   pnpm dsh web --patch /absolute/path/to/dsh-client-ui-mobile-mono/ui-v2/cordis.patch.yml
 #
-# 注意：ui-v2 与仓库根目录的 v1 同包名，二者请只安装一个。
+# 注意：仓库仅保留 ui-v2；若历史装过 v1（同包名），install.sh 会自动移除其组合行。
 - insert:
     - id: ui-mobile-mono-v2
       name: '@local/dsh-client-ui-mobile-mono'
