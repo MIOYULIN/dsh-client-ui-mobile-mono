@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     var exports = module.exports;
     const react = require("react");
     // 本插件版本（与 package.json 保持同步；统计卡脚注展示用）
-    const VERSION = "0.4.15";
+    const VERSION = "0.4.16";
 
     /* ---------------------------------------------------------------
      * 黑白主题 token 表：--dsw-alias-* / --dsw-specific-* 的灰阶覆盖。
@@ -303,14 +303,13 @@ window.__ModuleLoader__.load({
       animation: dshmu-rise 240ms cubic-bezier(0.32, 0.72, 0, 1) 150ms both;
     }
 
-    /* 遮罩：显隐完全由官方开合态状态机管辖 */
+    /* 遮罩：显隐完全由官方开合态状态机管辖。
+       无 backdrop-filter：模糊层随底层每次重绘重采样，点击即闪 */
     [data-dshmu-mobile] .dshmu-backdrop {
       display: none;
       position: absolute; inset: 0;
       z-index: 25;
-      background: rgb(0 0 0 / 42%);
-      -webkit-backdrop-filter: blur(10px) saturate(0.9);
-      backdrop-filter: blur(10px) saturate(0.9);
+      background: rgb(0 0 0 / 48%);
     }
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) .dshmu-backdrop,
     [data-dshmu-mobile]:not([data-details-collapsed]) .dshmu-backdrop {
@@ -426,7 +425,7 @@ window.__ModuleLoader__.load({
        否则遮罩后代选择器经 body 分支永远命中，关不掉）。 */
     body[data-dshmu-touch][data-dshmu-drawer-open] { overflow: hidden; }
 
-    /* 浮动汉堡（hero / 无会话画面）：毛玻璃浮层按钮 */
+    /* 浮动汉堡（hero / 无会话画面）：无毛玻璃（重采样闪烁），按压只动 transform */
     [data-dshmu-mobile] .dshmu-toggle {
       display: inline-flex;
       position: absolute;
@@ -438,18 +437,14 @@ window.__ModuleLoader__.load({
       border-radius: 13px;
       border: 1px solid var(--dsw-alias-border-l2, rgb(0 0 0 / 12%));
       background: var(--dsw-alias-bg-layer-1, #ffffff);
-      background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, #ffffff) 74%, transparent);
-      -webkit-backdrop-filter: blur(16px) saturate(1.2);
-      backdrop-filter: blur(16px) saturate(1.2);
       color: var(--dsw-alias-label-primary, #0f1115);
-      box-shadow: 0 2px 10px rgb(0 0 0 / 10%), 0 12px 32px rgb(0 0 0 / 12%);
+      box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
       cursor: pointer; padding: 0;
       -webkit-tap-highlight-color: transparent;
-      transition: transform 160ms cubic-bezier(0.32, 0.72, 0, 1), box-shadow 160ms ease;
+      transition: transform 160ms cubic-bezier(0.32, 0.72, 0, 1);
     }
     [data-dshmu-mobile] .dshmu-toggle:active {
       transform: scale(0.92);
-      box-shadow: 0 1px 6px rgb(0 0 0 / 12%);
     }
     [data-dshmu-mobile] .dshmu-toggle {
       animation: dshmu-pop 340ms cubic-bezier(0.32, 0.72, 0, 1) 120ms both;
@@ -478,6 +473,9 @@ window.__ModuleLoader__.load({
     /* 触摸优化 */
     body[data-dshmu-touch] { overscroll-behavior-y: none; -webkit-text-size-adjust: 100%; }
     body[data-dshmu-touch], body[data-dshmu-touch] button { touch-action: manipulation; }
+    /* 全局防点击闪：官方元素未关 tap 高亮，每次点击盖一层灰罩再消失即"闪"。
+       该属性不继承，必须通配；按压反馈由各控件自身 :active 承担 */
+    body[data-dshmu-touch] * { -webkit-tap-highlight-color: transparent; }
     @media (max-width: 1023px) { textarea, input, select { font-size: 16px !important; } }
 
     /* ------------------------------------------------------------
