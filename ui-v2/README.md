@@ -25,7 +25,7 @@ cd ui-v2
 卸载：`./uninstall.sh`。本地开发：
 
 ```bash
-pnpm dsh web --patch /absolute/path/to/dsh-mono/ui-v2/cordis.patch.yml
+pnpm dsh web --patch /absolute/path/to/dsh-client-ui-mobile-mono/ui-v2/cordis.patch.yml
 ```
 
 ## 结构

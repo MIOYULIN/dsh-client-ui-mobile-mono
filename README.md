@@ -36,8 +36,8 @@ DeepSeek Harness（DSH）Web UI 的**移动端适配插件**：手机浏览器�
 ### 方式 1：脚本安装（推荐）
 
 ```sh
-git clone https://github.com/MIOYULIN/dsh-mono.git
-cd dsh-mono
+git clone https://github.com/MIOYULIN/dsh-client-ui-mobile-mono.git
+cd dsh-client-ui-mobile-mono
 ./install.sh                    # 默认装进 ~/.dsh/profiles/web
 # 或指定 profile：./install.sh ~/.dsh/profiles/你的profile
 ```
@@ -48,7 +48,7 @@ cd dsh-mono
 
 ```sh
 # deepseek-harness 仓库根目录
-pnpm dsh web --patch /绝对路径/dsh-mono/cordis.patch.yml
+pnpm dsh web --patch /绝对路径/dsh-client-ui-mobile-mono/cordis.patch.yml
 ```
 
 ### 验证
