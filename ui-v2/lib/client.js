@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     var exports = module.exports;
     const react = require("react");
     // 本插件版本（与 package.json 保持同步；统计卡脚注展示用）
-    const VERSION = "0.4.18";
+    const VERSION = "0.4.19";
 
     /* ---------------------------------------------------------------
      * 黑白主题 token 表：--dsw-alias-* / --dsw-specific-* 的灰阶覆盖。
@@ -191,7 +191,7 @@ window.__ModuleLoader__.load({
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > [data-dshmu-sidebar],
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > div:first-child {
       transform: translateX(0);
-      /* 展开态零阴影：景深由遮罩承担，避免黑色投影与阴影层重绘 */
+      /* 展开态零阴影：景深由中列 scale 收缩表达，不投黑色 */
       box-shadow: none;
     }
 
@@ -321,24 +321,21 @@ window.__ModuleLoader__.load({
     }
 
     /* 遮罩：显隐完全由官方开合态状态机管辖。
-       无 backdrop-filter：模糊层随底层每次重绘重采样，点击即闪 */
+       完全透明 —— 仅作点击关闭的命中层，不投任何黑色变暗/阴影
+       （景深由中列 scale 收缩表达）；无 backdrop-filter（重采样闪烁）。 */
     [data-dshmu-mobile] .dshmu-backdrop {
       display: none;
       position: absolute; inset: 0;
       z-index: 25;
-      background: rgb(0 0 0 / 48%);
+      background: transparent;
     }
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) .dshmu-backdrop,
     [data-dshmu-mobile]:not([data-details-collapsed]) .dshmu-backdrop {
       display: block;
-      animation: dshmu-fade-in 280ms ease;
     }
     [data-dshmu-mobile][data-dshmu-dragging] .dshmu-backdrop {
       display: block;
-      opacity: var(--dshmu-progress, 1);
-      animation: none;
     }
-    @keyframes dshmu-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
     /* ------------------------------------------------------------
      * 动效系统（v0.4.8）：统一缓动 cubic-bezier(0.32,0.72,0,1)，
