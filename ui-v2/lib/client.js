@@ -243,7 +243,9 @@ window.__ModuleLoader__.load({
        否则遮罩后代选择器经 body 分支永远命中，关不掉）。 */
     body[data-dshmu-touch][data-dshmu-drawer-open] { overflow: hidden; }
 
-    /* 浮动汉堡（hero / 无会话画面）：毛玻璃浮层按钮 */
+    /* 浮动汉堡（hero / 无会话画面）。
+       性能：不透明实底 + 静态阴影 —— backdrop-filter 会让首页动态背景
+       每帧重采样该按钮后方区域，整页跟着掉帧（首页卡顿主因）。 */
     [data-dshmu-mobile] .dshmu-toggle {
       display: inline-flex;
       position: absolute;
@@ -255,18 +257,14 @@ window.__ModuleLoader__.load({
       border-radius: 13px;
       border: 1px solid var(--dsw-alias-border-l2, rgb(0 0 0 / 12%));
       background: var(--dsw-alias-bg-layer-1, #ffffff);
-      background: color-mix(in srgb, var(--dsw-alias-bg-layer-1, #ffffff) 74%, transparent);
-      -webkit-backdrop-filter: blur(16px) saturate(1.2);
-      backdrop-filter: blur(16px) saturate(1.2);
       color: var(--dsw-alias-label-primary, #0f1115);
-      box-shadow: 0 2px 10px rgb(0 0 0 / 10%), 0 12px 32px rgb(0 0 0 / 12%);
+      box-shadow: 0 2px 10px rgb(0 0 0 / 10%);
       cursor: pointer; padding: 0;
       -webkit-tap-highlight-color: transparent;
-      transition: transform 160ms cubic-bezier(0.32, 0.72, 0, 1), box-shadow 160ms ease;
+      transition: transform 160ms cubic-bezier(0.32, 0.72, 0, 1);
     }
     [data-dshmu-mobile] .dshmu-toggle:active {
       transform: scale(0.92);
-      box-shadow: 0 1px 6px rgb(0 0 0 / 12%);
     }
 
     /* 会话头部汉堡 */
@@ -695,15 +693,20 @@ window.__ModuleLoader__.load({
         const mobile = window.__dshmuForce === true
           || /Android|iPhone|iPod|iPad|Windows Phone|Mobile/i.test(ua);
         if (mobile) {
-          if (!frame.hasAttribute("data-dshmu-mobile")) {
+          const wasMobile = frame.hasAttribute("data-dshmu-mobile");
+          if (!wasMobile) {
             frame.setAttribute("data-dshmu-arming", "");
             requestAnimationFrame(() => requestAnimationFrame(() => {
               frame.removeAttribute("data-dshmu-arming");
               syncDrawerState();
             }));
           }
-          frame.setAttribute("data-dshmu-mobile", "");
-          document.body.setAttribute("data-dshmu-touch", "");
+          // 幂等写入：地址栏伸缩等 resize 风暴下不重复设同名属性，
+          // 避免惊醒 MutationObserver 级联（首页卡顿帮凶）
+          if (!wasMobile) frame.setAttribute("data-dshmu-mobile", "");
+          if (!document.body.hasAttribute("data-dshmu-touch")) {
+            document.body.setAttribute("data-dshmu-touch", "");
+          }
           applyWidth();
           if (!detailsAutoClosed && layout !== undefined) {
             layout.closeDetails();
