@@ -336,6 +336,13 @@
   .composer-hint kbd { font: inherit; padding: 1px 5px; border-radius: 5px;
     border: 1px solid var(--line-2); background: var(--surface); color: var(--fg-2); }
 
+  /* 假官方统计条（桌面可见；移动端由插件 CSS body[data-dshmu-touch] 隐藏） */
+  .demo-official-stats {
+    margin-top: 8px; text-align: center;
+    font-family: ui-monospace, Menlo, monospace; font-size: 10.5px;
+    color: var(--fg-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
   /* ---------------- 右列：详情 ---------------- */
   .demo-details {
     background: var(--bg); border-left: 1px solid var(--line);
@@ -525,6 +532,8 @@
             </button>
           </div>
           <div class="composer-hint"><kbd>Enter</kbd> 发送 · <kbd>Shift+Enter</kbd> 换行 · 左缘右滑开侧栏</div>
+          <div class="FJxK0a_root demo-official-stats">3 轮 · 21 步 | LLM 1m1s · 工具调用 40.9s | TTFT 0.2s · 42 t/s | 缓存 87% · 12.4K / 2.2K（官方统计条，移动端折叠进胶囊）</div>
+          <div id="dockStats"></div>
         </div>
       </div>
 
@@ -620,7 +629,37 @@ function h(type, props, ...kids) {
   }
   return el;
 }
-const reactShim = { createElement: h };
+const reactShim = {
+  createElement: h,
+  // 最小 useState：仅够 dock 组件（StatsFold）开合态；setState 后由
+  // window.__dshmuRerender（dock 挂载处注册）整棵重挂。
+  useState(init) {
+    const i = reactShim._idx++;
+    if (!Object.prototype.hasOwnProperty.call(reactShim._s, i)) {
+      reactShim._s[i] = { v: typeof init === "function" ? init() : init };
+    }
+    const slot = reactShim._s[i];
+    return [slot.v, (nv) => {
+      slot.v = typeof nv === "function" ? nv(slot.v) : nv;
+      if (typeof window.__dshmuRerender === "function") window.__dshmuRerender();
+    }];
+  },
+  _idx: 0, _s: {},
+};
+
+// 折叠统计 mock：优先走投影，缺投影时组件会从 session 节点 deriveStats
+const mockDockData = {
+  sessionStats: { turns: 3, steps: 21, llmMs: 61000, toolMs: 40900, ttftMs: 4600, ttftSteps: 21, decodeMs: 52000, decodeTokens: 2180 },
+  tokenUsage: { uncachedInputTokens: 1600, cacheReadTokens: 10800, cacheWriteTokens: 0, outputTokens: 2180 },
+  session: {
+    chat: { legacy: { nodes: [
+      { kind: "assistant", turn: 1, time: 1, callTime: null,
+        timing: { stepStartTime: 0, firstTokenTime: 200, completedTime: 2100 },
+        usage: { outputTokens: 120 } },
+      { kind: "tool-result", turn: 1, time: 5200, callTime: 2100 },
+    ] } },
+  },
+};
 
 // 3. 演示数据
 const sessions = [
@@ -746,10 +785,25 @@ const services = {
         } else if (name === "conversation.session.header.actions") {
           node = Comp({});
           headerActions.appendChild(node);
+        } else if (name === "conversation.composer.dock") {
+          // 折叠统计：mock 投影 + 会话节点（无 sessionStats 时走 deriveStats）
+          const props = {
+            useProjection: (k) => mockDockData[k],
+            useSession: (sel) => sel(mockDockData.session),
+          };
+          const host = document.getElementById("dockStats");
+          const render = () => {
+            reactShim._idx = 0;
+            if (node) node.remove();
+            node = Comp(props);
+            if (node) host.appendChild(node);
+          };
+          window.__dshmuRerender = render;
+          render();
         }
       };
       mount();
-      return () => { node && node.remove(); };
+      return () => { node && node.remove(); if (name === "conversation.composer.dock") delete window.__dshmuRerender; };
     },
   },
 };

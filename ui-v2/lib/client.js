@@ -221,6 +221,57 @@ window.__ModuleLoader__.load({
     /* 输入栏模型选择器：隐藏模型名（sweepModelTriggers 打标，偏好可关） */
     body[data-dshmu-touch] [data-dshmu-hide="model"] { display: none !important; }
 
+    /* 官方统计条（composer 下 .FJxK0a_root）移动端隐藏 → 移入折叠统计菜单 */
+    body[data-dshmu-touch] .FJxK0a_root { display: none !important; }
+
+    /* 折叠统计：收起 = mono 胶囊；展开 = 双列统计卡（composer.dock 注入） */
+    .dshmu-stats { display: none; }
+    [data-dshmu-mobile] .dshmu-stats {
+      display: flex; flex-direction: column; align-items: center;
+      width: 100%; padding: 0 0 2px; gap: 8px;
+    }
+    [data-dshmu-mobile] .dshmu-stats-chip {
+      display: inline-flex; align-items: center; gap: 7px;
+      border: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 8%));
+      background: var(--dsw-alias-bg-layer-2, #fafafa);
+      border-radius: 999px;
+      padding: 4px 11px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 10.5px; letter-spacing: 0.04em;
+      color: var(--dshmu-label-3, var(--dsw-alias-label-tertiary, #737373));
+      cursor: pointer; -webkit-tap-highlight-color: transparent;
+    }
+    [data-dshmu-mobile] .dshmu-stats-chip svg { flex: none; opacity: 0.7; }
+    [data-dshmu-mobile] .dshmu-stats-chip:active { background: var(--dsw-alias-interactive-bg-hover, rgb(0 0 0 / 6%)); }
+    [data-dshmu-mobile] .dshmu-stats-sheet {
+      width: min(100%, 430px);
+      border: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 8%));
+      border-radius: 16px;
+      background: var(--dsw-alias-bg-layer-1, #ffffff);
+      box-shadow: 0 6px 24px rgb(0 0 0 / 8%);
+      display: grid; grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+      animation: dshmu-fade-in 180ms ease;
+    }
+    [data-dshmu-mobile] .dshmu-stats-cell {
+      padding: 9px 14px 8px;
+      border-top: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 6%));
+    }
+    [data-dshmu-mobile] .dshmu-stats-cell:nth-child(-n+2) { border-top: none; }
+    [data-dshmu-mobile] .dshmu-stats-cell:nth-child(odd) { border-right: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 6%)); }
+    [data-dshmu-mobile] .dshmu-stats-cell b {
+      display: block;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--dsw-alias-label-tertiary, #737373);
+    }
+    [data-dshmu-mobile] .dshmu-stats-cell span {
+      display: block; margin-top: 2px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 13px; color: var(--dsw-alias-label-primary, #0f1115);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
     /* 遮罩：显隐完全由官方开合态状态机管辖 */
     [data-dshmu-mobile] .dshmu-backdrop {
       display: none;
@@ -476,6 +527,9 @@ window.__ModuleLoader__.load({
         optWidth: "抽屉宽度", optWidthDesc: "侧栏抽屉展开宽度",
         optEdge: "左缘滑开手势", optEdgeDesc: "屏幕左缘右滑打开抽屉",
         optHideModel: "隐藏模型名称", optHideModelDesc: "输入栏模型选择器只显示思考等级",
+        stTurns: "轮次", stLLM: "LLM 耗时", stTool: "工具调用", stTTFT: "首字延迟",
+        stTPS: "解码速度", stCache: "缓存命中", stTokens: "上下文 / 输出",
+        stExpand: "展开统计", stCollapse: "收起统计",
         wShort: "窄", wMid: "标准", wWide: "宽",
       },
       en: {
@@ -486,6 +540,9 @@ window.__ModuleLoader__.load({
         optWidth: "Drawer width", optWidthDesc: "Expanded sidebar drawer width",
         optEdge: "Edge swipe", optEdgeDesc: "Swipe from left edge to open drawer",
         optHideModel: "Hide model name", optHideModelDesc: "Composer model picker shows thinking level only",
+        stTurns: "Turns", stLLM: "LLM time", stTool: "Tool calls", stTTFT: "TTFT",
+        stTPS: "Decode speed", stCache: "Cache hit", stTokens: "Context / out",
+        stExpand: "Expand stats", stCollapse: "Collapse stats",
         wShort: "N", wMid: "M", wWide: "W",
       },
     };
@@ -835,6 +892,89 @@ window.__ModuleLoader__.load({
         fill: "none", stroke: "currentColor", strokeWidth: 1.7,
         strokeLinecap: "round", "aria-hidden": true,
       }, react.createElement("path", { d: "M2.5 4.5h13M2.5 9h13M2.5 13.5h13" }));
+      const CARET = (up) => react.createElement("svg", {
+        width: 11, height: 11, viewBox: "0 0 16 16", fill: "none",
+        stroke: "currentColor", strokeWidth: 1.8, strokeLinecap: "round",
+        strokeLinejoin: "round", "aria-hidden": true,
+      }, react.createElement("path", { d: up ? "M3 10l5-5 5 5" : "M3 6l5 5 5-5" }));
+
+      /* ---------- 折叠统计（官方统计条移动端隐藏后由本组件接管） ---------- */
+      const fmtDur = (ms) => {
+        const s = ms / 1000;
+        if (s < 60) return `${Math.round(s * 10) / 10}s`;
+        const w = Math.round(s);
+        return `${Math.floor(w / 60)}m${w % 60}s`;
+      };
+      const fmtTok = (n) => (n < 1000 ? String(n)
+        : n < 1e6 ? `${Math.round(n / 100) / 10}K` : `${Math.round(n / 1e5) / 10}M`);
+      // 无 sessionStats 投影时，从会话 chat 节点折叠出轮/步/时长
+      const deriveStats = (nodes) => {
+        const turns = new Set();
+        let steps = 0, llmMs = 0, toolMs = 0, ttftMs = 0, ttftSteps = 0, decodeMs = 0, decodeTokens = 0;
+        for (const node of nodes || []) {
+          if (node.kind === "tool-result") {
+            if (node.callTime !== null) toolMs += Math.max(0, node.time - node.callTime);
+            continue;
+          }
+          if (node.kind !== "assistant") continue;
+          turns.add(node.turn);
+          steps += 1;
+          const tg = node.timing;
+          if (tg !== undefined && tg.stepStartTime !== null) llmMs += Math.max(0, tg.completedTime - tg.stepStartTime);
+          const ttft = tg !== undefined && tg.stepStartTime !== null && tg.firstTokenTime !== null
+            ? Math.max(0, tg.firstTokenTime - tg.stepStartTime) : null;
+          const dec = tg !== undefined && tg.firstTokenTime !== null
+            ? Math.max(0, tg.completedTime - tg.firstTokenTime) : null;
+          if (ttft !== null) { ttftMs += ttft; ttftSteps += 1; }
+          if (dec !== null && node.usage) { decodeMs += dec; decodeTokens += node.usage.outputTokens || 0; }
+        }
+        return { turns: turns.size, steps, llmMs, toolMs, ttftMs, ttftSteps, decodeMs, decodeTokens };
+      };
+
+      function StatsFold(props) {
+        const [open, setOpen] = react.useState(false);
+        const proj = typeof props.useProjection === "function" ? props.useProjection : null;
+        const usage = proj ? proj("tokenUsage") : undefined;
+        const projected = proj ? proj("sessionStats") : undefined;
+        const nodes = typeof props.useSession === "function"
+          ? props.useSession((s) => (s && s.chat && s.chat.legacy ? s.chat.legacy.nodes : []))
+          : [];
+        const stats = projected !== undefined && projected !== null ? projected : deriveStats(nodes);
+        const hasStats = stats !== undefined && stats !== null && stats.steps > 0;
+        const billed = usage !== undefined && usage !== null
+          ? usage.uncachedInputTokens + usage.cacheReadTokens + usage.cacheWriteTokens : 0;
+        const hasUsage = billed > 0 || (usage !== undefined && usage !== null && usage.outputTokens > 0);
+        if (!hasStats && !hasUsage) return null;
+        const totalMs = (stats ? stats.llmMs + stats.toolMs : 0) || 0;
+        const cells = [];
+        const cell = (label, value) => cells.push(react.createElement("div", { key: label, className: "dshmu-stats-cell" },
+          react.createElement("b", null, label),
+          react.createElement("span", null, value)));
+        if (hasStats) {
+          cell(t("stTurns"), `${stats.turns} · ${stats.steps}`);
+          cell(t("stLLM"), fmtDur(stats.llmMs));
+          if (stats.toolMs > 0) cell(t("stTool"), fmtDur(stats.toolMs));
+          if (stats.ttftSteps > 0) cell(t("stTTFT"), fmtDur(stats.ttftMs / stats.ttftSteps));
+          if (stats.decodeMs > 0) {
+            cell(t("stTPS"), `${Math.round((stats.decodeTokens / (stats.decodeMs / 1000)) * 10) / 10} tok/s`);
+          }
+        }
+        if (hasUsage) {
+          if (billed > 0) cell(t("stCache"), `${Math.round(usage.cacheReadTokens / billed * 100)}%`);
+          cell(t("stTokens"), `${fmtTok(billed)} / ${fmtTok(usage.outputTokens)}`);
+        }
+        return react.createElement("div", { className: "dshmu-stats" },
+          react.createElement("button", {
+            type: "button",
+            className: "dshmu-stats-chip",
+            onClick: () => setOpen(!open),
+            "aria-expanded": String(open),
+            "aria-label": open ? t("stCollapse") : t("stExpand"),
+          },
+            hasStats ? `${stats.turns} ${curLang === "zh" ? "轮" : "trn"} · ${stats.steps} ${curLang === "zh" ? "步" : "stp"} · ${fmtDur(totalMs)}` : t("stTokens"),
+            CARET(open)),
+          open ? react.createElement("div", { className: "dshmu-stats-sheet" }, cells) : null);
+      }
 
       /* ---------- 组件 ---------- */
       function Backdrop() {
@@ -953,7 +1093,9 @@ window.__ModuleLoader__.load({
         const off3 = slots.inject("conversation.session.header.actions", () => slots.register({ name: "conversation.session.header.actions", id: "dshmu-header-toggle", order: -20 }, HeaderToggle));
         // v2：自有设置卡（官方通用设置页单行插槽）
         const off4 = slots.inject("settings.general.item", () => slots.register({ name: "settings.general.item", id: "dshmu-mobile-ui", order: 20 }, MobileUiSettingsRow));
-        return () => { off1(); off2(); off3(); off4(); };
+        // v2：折叠统计（官方统计条移动端已隐藏，由本组件接管）
+        const off5 = slots.inject("conversation.composer.dock", () => slots.register({ name: "conversation.composer.dock", id: "dshmu-stats-fold", order: 1 }, StatsFold));
+        return () => { off1(); off2(); off3(); off4(); off5(); };
       }, "dshmu-mono: slots");
 
       /* ---------- 全量清理 ---------- */
