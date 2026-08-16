@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     var exports = module.exports;
     const react = require("react");
     // 本插件版本（与 package.json 保持同步；统计卡脚注展示用）
-    const VERSION = "0.4.17";
+    const VERSION = "0.4.18";
 
     /* ---------------------------------------------------------------
      * 黑白主题 token 表：--dsw-alias-* / --dsw-specific-* 的灰阶覆盖。
@@ -186,17 +186,13 @@ window.__ModuleLoader__.load({
       border-right: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 8%));
       box-shadow: none;
       transform: translateX(-102%);
-      transition:
-        transform 320ms cubic-bezier(0.32, 0.72, 0, 1),
-        box-shadow 320ms cubic-bezier(0.32, 0.72, 0, 1);
+      transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
     }
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > [data-dshmu-sidebar],
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > div:first-child {
       transform: translateX(0);
-      box-shadow:
-        0 0 0 1px rgb(0 0 0 / 3%),
-        8px 0 24px rgb(0 0 0 / 18%),
-        28px 0 72px rgb(0 0 0 / 32%);
+      /* 展开态零阴影：景深由遮罩承担，避免黑色投影与阴影层重绘 */
+      box-shadow: none;
     }
 
     /* 进入移动模式首帧禁用过渡（防闪动） */
@@ -425,7 +421,10 @@ window.__ModuleLoader__.load({
       [data-dshmu-mobile] [class*="dshmu-"],
       [data-dshmu-mobile] [data-dshmu-stagger],
       body[data-dshmu-touch] [class*="dshmu-"],
+      body[data-dshmu-touch] [class*="dshmu-"]::before,
+      body[data-dshmu-touch] [class*="dshmu-"]::after,
       body[data-dshmu-touch] [role="dialog"],
+      body[data-dshmu-touch] [role="dialog"] *,
       body[data-dshmu-touch] [role="dialog"] > div:last-child > *,
       body[data-dshmu-touch] [role="listbox"],
       body[data-dshmu-touch] [role="listbox"] [role="option"],
@@ -590,6 +589,47 @@ window.__ModuleLoader__.load({
     body[data-dshmu-touch] .qSYn7G_cards { grid-template-columns: 1fr !important; }
 
     /* ------------------------------------------------------------
+     * 设置弹窗动画补全：弹窗内所有可交互元素统一动效语言——
+     * 按压回缩（:active transform，松手回弹）+ 状态过渡
+     * （背景/文字/边框换色不再瞬跳）。官方元素 hash 不可知，
+     * 以 role/标签通配覆盖。特异性低于上面的 navCell 专属规则
+     * （其 0.92 回缩优先）。
+     * ---------------------------------------------------------- */
+    body[data-dshmu-touch] [role="dialog"] button,
+    body[data-dshmu-touch] [role="dialog"] [role="option"],
+    body[data-dshmu-touch] [role="dialog"] [role="menuitem"],
+    body[data-dshmu-touch] [role="dialog"] [role="switch"],
+    body[data-dshmu-touch] [role="dialog"] a,
+    body[data-dshmu-touch] [role="dialog"] label,
+    body[data-dshmu-touch] [role="dialog"] summary {
+      transition:
+        transform 150ms cubic-bezier(0.32, 0.72, 0, 1),
+        opacity 150ms ease,
+        background-color 180ms ease,
+        color 180ms ease,
+        border-color 180ms ease;
+    }
+    body[data-dshmu-touch] [role="dialog"] button:active,
+    body[data-dshmu-touch] [role="dialog"] [role="option"]:active,
+    body[data-dshmu-touch] [role="dialog"] [role="menuitem"]:active,
+    body[data-dshmu-touch] [role="dialog"] [role="switch"]:active,
+    body[data-dshmu-touch] [role="dialog"] a:active,
+    body[data-dshmu-touch] [role="dialog"] label:active,
+    body[data-dshmu-touch] [role="dialog"] summary:active {
+      transform: scale(0.94);
+      opacity: 0.8;
+    }
+    /* 输入控件：焦点/换色过渡 */
+    body[data-dshmu-touch] [role="dialog"] input,
+    body[data-dshmu-touch] [role="dialog"] textarea,
+    body[data-dshmu-touch] [role="dialog"] select {
+      transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+    }
+    /* 内容头：大标题随弹窗入场后上滑就位；关闭钮弹性浮现 */
+    body[data-dshmu-touch] .VOzbGW_header { animation: dshmu-rise 300ms cubic-bezier(0.32, 0.72, 0, 1) 90ms both; }
+    body[data-dshmu-touch] .VOzbGW_close { animation: dshmu-pop 360ms cubic-bezier(0.34, 1.4, 0.5, 1) 170ms both; }
+
+    /* ------------------------------------------------------------
      * 自有设置卡（settings.general.item 注入，自带 dshmu-* 类，
      * 不依赖官方 hash；官方 token 优先，缺省回退灰阶）
      * ---------------------------------------------------------- */
@@ -604,6 +644,11 @@ window.__ModuleLoader__.load({
       color: inherit;
       padding: 0;
       margin: 0;
+      animation: dshmu-card-in 340ms cubic-bezier(0.32, 0.72, 0, 1) both;
+    }
+    @keyframes dshmu-card-in {
+      from { opacity: 0; transform: translateY(10px) scale(0.985); }
+      to { opacity: 1; transform: none; }
     }
     .dshmu-set-head {
       display: flex; align-items: center; gap: 10px;
@@ -616,6 +661,11 @@ window.__ModuleLoader__.load({
       background: var(--dsw-alias-label-primary, #000000);
       color: var(--dsw-alias-label-primary-foreground, #ffffff);
       font-size: 14px; font-weight: 700;
+      animation: dshmu-glyph-in 420ms cubic-bezier(0.34, 1.4, 0.5, 1) 90ms both;
+    }
+    @keyframes dshmu-glyph-in {
+      from { opacity: 0; transform: rotate(-90deg) scale(0.6); }
+      to { opacity: 1; transform: none; }
     }
     .dshmu-set-head .t { flex: 1; min-width: 0; }
     .dshmu-set-head b { display: block; font-size: 13.5px; font-weight: 650; letter-spacing: -0.01em; }
@@ -648,8 +698,10 @@ window.__ModuleLoader__.load({
       position: absolute; top: 2px; left: 2px;
       width: 20px; height: 20px; border-radius: 50%;
       background: var(--dsw-alias-label-primary, #000000);
-      /* 弹性缓动：拇指快速到位后轻微回弹 */
-      transition: left 260ms cubic-bezier(0.34, 1.3, 0.5, 1), background 180ms;
+      /* 弹性缓动：拇指快速到位后轻微回弹；width 参与过渡实现按压延展 */
+      transition: left 260ms cubic-bezier(0.34, 1.3, 0.5, 1),
+                  width 160ms cubic-bezier(0.32, 0.72, 0, 1),
+                  background 180ms;
     }
     .dshmu-sw[data-on="true"] {
       background: var(--dsw-alias-button-primary-fill, #000000);
@@ -660,28 +712,47 @@ window.__ModuleLoader__.load({
       background: var(--dsw-alias-brand-primary-invert, #ffffff);
     }
     .dshmu-sw:active { transform: scale(0.96); }
-    /* 宽度分段选择器 */
+    /* 按压时拇指向行程方向延展（iOS 式预压反馈） */
+    .dshmu-sw:active::after { width: 24px; }
+    .dshmu-sw[data-on="true"]:active::after { left: 16px; }
+    /* 宽度分段选择器：grid 三等分（轨道等宽与标签字宽无关），
+       黑色滑块 ::before 随 --dshmu-seg-i 弹性滑动；按钮只换文字色 */
     .dshmu-seg {
-      display: inline-flex; flex: none;
+      display: inline-grid; grid-template-columns: repeat(3, 1fr); flex: none;
+      position: relative;
       border: 1px solid var(--dsw-alias-border-l2, rgb(0 0 0 / 12%));
       border-radius: 11px;
-      overflow: hidden;
       background: var(--dsw-alias-bg-layer-1, #ffffff);
     }
+    .dshmu-seg::before {
+      content: "";
+      position: absolute; top: 1px; bottom: 1px;
+      left: calc(1px + var(--dshmu-seg-i, 1) * (100% - 2px) / 3);
+      width: calc((100% - 2px) / 3);
+      border-radius: 9px;
+      background: var(--dsw-alias-label-primary, #000000);
+      transition: left 300ms cubic-bezier(0.34, 1.25, 0.5, 1);
+    }
     .dshmu-seg button {
+      position: relative; z-index: 1;
       border: none; background: none; cursor: pointer;
-      padding: 7px 12px;
+      padding: 7px 12px; min-width: 0;
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 11px;
       color: var(--dsw-alias-label-tertiary, #737373);
-      transition: background 140ms, color 140ms, transform 140ms cubic-bezier(0.32, 0.72, 0, 1);
+      transition: color 180ms ease, transform 150ms cubic-bezier(0.32, 0.72, 0, 1);
       -webkit-tap-highlight-color: transparent;
     }
     .dshmu-seg button:active { transform: scale(0.93); }
-    .dshmu-seg button + button { border-left: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 8%)); }
     .dshmu-seg button[data-on="true"] {
-      background: var(--dsw-alias-label-primary, #000000);
       color: var(--dsw-alias-label-primary-foreground, #ffffff);
+      /* 属性翻转为 true 时动画重放：选中即轻弹确认 */
+      animation: dshmu-seg-pop 300ms cubic-bezier(0.34, 1.5, 0.5, 1);
+    }
+    @keyframes dshmu-seg-pop {
+      0% { transform: scale(0.86); }
+      60% { transform: scale(1.05); }
+      100% { transform: none; }
     }
 
     /* ------------------------------------------------------------
@@ -1372,7 +1443,7 @@ window.__ModuleLoader__.load({
             if (key === "hideModel") sweepModelTriggers();
           },
         });
-        const segBtn = (val, label, on) => react.createElement("button", {
+        const segBtn = (val, label, on, i) => react.createElement("button", {
           type: "button",
           "data-on": String(on),
           onClick: (e) => {
@@ -1381,6 +1452,8 @@ window.__ModuleLoader__.load({
             for (const b of parent.childNodes) {
               if (b.nodeType === 1) b.setAttribute("data-on", String(b === el));
             }
+            // 滑块索引：驱动 .dshmu-seg::before 的 left 过渡
+            parent.style.setProperty("--dshmu-seg-i", String(i));
             opts.drawerW = val;
             saveOpts();
             applyWidth();
@@ -1402,10 +1475,13 @@ window.__ModuleLoader__.load({
             react.createElement("span", { className: "t" },
               react.createElement("b", null, t("optWidth")),
               react.createElement("span", null, t("optWidthDesc"))),
-            react.createElement("span", { className: "dshmu-seg" },
-              segBtn(300, t("wShort"), opts.drawerW === 300),
-              segBtn(360, t("wMid"), opts.drawerW === 360),
-              segBtn(420, t("wWide"), opts.drawerW === 420))),
+            react.createElement("span", {
+              className: "dshmu-seg",
+              style: { "--dshmu-seg-i": opts.drawerW === 300 ? "0" : opts.drawerW === 420 ? "2" : "1" },
+            },
+              segBtn(300, t("wShort"), opts.drawerW === 300, 0),
+              segBtn(360, t("wMid"), opts.drawerW === 360, 1),
+              segBtn(420, t("wWide"), opts.drawerW === 420, 2))),
           react.createElement("div", { className: "dshmu-set-row" },
             react.createElement("span", { className: "t" },
               react.createElement("b", null, t("optEdge")),
