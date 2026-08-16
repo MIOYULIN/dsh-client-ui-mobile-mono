@@ -352,6 +352,23 @@
   .dt-file .ic { width: 26px; height: 26px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line);
     display: inline-flex; align-items: center; justify-content: center; color: var(--fg); flex: none; }
 
+  /* ---------------- 移动端头部紧凑化（body[data-dshmu-touch] 作用域） ----------------
+     370px 内容宽里原布局塞了 汉堡+双行标题+模型chip+详情按钮，过挤：
+     收窄 padding/gap、隐藏副标题行、chip 压缩成紧凑徽标 */
+  body[data-dshmu-touch] .demo-header { min-height: 50px; padding: 6px 10px; gap: 4px; }
+  body[data-dshmu-touch] .hd-title { margin-left: 0; }
+  body[data-dshmu-touch] .hd-title .t { font-size: 14px; }
+  body[data-dshmu-touch] .hd-title .s { display: none; }        /* 副标题让位 */
+  body[data-dshmu-touch] .model-chip {
+    height: 28px; padding: 0 8px; gap: 5px;
+    font-size: 10px; border-radius: 9px;
+    max-width: 96px; overflow: hidden; flex: none;
+  }
+  body[data-dshmu-touch] .model-chip svg { display: none; }     /* 去下拉箭头 */
+  body[data-dshmu-touch] .model-chip .mc-led { width: 5px; height: 5px; }
+  body[data-dshmu-touch] #btnDetails { width: 28px; height: 28px; }
+  body[data-dshmu-touch] .dshmu-header-toggle { width: 30px; height: 30px; }
+
   /* 细滚动条 */
   .sb-body::-webkit-scrollbar, .demo-flow::-webkit-scrollbar, .demo-details::-webkit-scrollbar { width: 4px; }
   .sb-body::-webkit-scrollbar-thumb, .demo-flow::-webkit-scrollbar-thumb, .demo-details::-webkit-scrollbar-thumb { border-radius: 2px; background: var(--line-2); }
