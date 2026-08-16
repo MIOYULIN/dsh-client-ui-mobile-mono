@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     var exports = module.exports;
     const react = require("react");
     // 本插件版本（与 package.json 保持同步；统计卡脚注展示用）
-    const VERSION = "0.4.16";
+    const VERSION = "0.4.17";
 
     /* ---------------------------------------------------------------
      * 黑白主题 token 表：--dsw-alias-* / --dsw-specific-* 的灰阶覆盖。
@@ -230,7 +230,7 @@ window.__ModuleLoader__.load({
     .dshmu-stats { display: none; }
     [data-dshmu-mobile] .dshmu-stats {
       display: flex; flex-direction: column; align-items: center;
-      width: 100%; padding: 0 0 2px; gap: 8px;
+      width: 100%; padding: 0 0 2px;
     }
     [data-dshmu-mobile] .dshmu-stats-chip {
       display: inline-flex; align-items: center; gap: 7px;
@@ -255,13 +255,34 @@ window.__ModuleLoader__.load({
       box-shadow: none;
       display: grid; grid-template-columns: 1fr 1fr;
       overflow: hidden;
+      /* grid item 须可收缩（min-height:auto 会顶住 0fr） */
+      min-height: 0;
       transform-origin: 50% 100%;
       animation: dshmu-sheet-up 260ms cubic-bezier(0.32, 0.72, 0, 1);
     }
-    /* 收起：下滑缩小退出（退出期间由 JS 保持挂载），结束态钉住防闪回 */
-    [data-dshmu-mobile] .dshmu-stats-sheet[data-closing] {
-      animation: dshmu-sheet-down 200ms cubic-bezier(0.32, 0.72, 0, 1) both;
+    /* 高度包装层：收起时 grid-template-rows 1fr→0fr 让布局高度平滑归零，
+     * 上方被顶起的内容随高度同步落回（否则卸载瞬间高度消失会闪跳）。
+     * margin-top 承担与胶囊的间距，同样纳入过渡，卸载零残留。 */
+    [data-dshmu-mobile] .dshmu-stats-wrap {
+      display: grid;
+      grid-template-rows: 1fr;
+      margin-top: 8px;
+      animation: dshmu-rows-open 240ms cubic-bezier(0.32, 0.72, 0, 1);
+      transition: grid-template-rows 200ms cubic-bezier(0.32, 0.72, 0, 1),
+                  margin-top 200ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    [data-dshmu-mobile] .dshmu-stats-wrap[data-closing] {
+      grid-template-rows: 0fr;
+      margin-top: 0;
       pointer-events: none;
+    }
+    @keyframes dshmu-rows-open {
+      from { grid-template-rows: 0fr; margin-top: 0; }
+      to { grid-template-rows: 1fr; margin-top: 8px; }
+    }
+    /* 收起：内容淡出下移（高度收缩由 wrap 层负责），结束态钉住防闪回 */
+    [data-dshmu-mobile] .dshmu-stats-wrap[data-closing] > .dshmu-stats-sheet {
+      animation: dshmu-sheet-down 200ms cubic-bezier(0.32, 0.72, 0, 1) both;
     }
     @keyframes dshmu-sheet-down {
       from { opacity: 1; transform: translateY(0) scale(1); }
@@ -1276,13 +1297,17 @@ window.__ModuleLoader__.load({
             hasStats ? `${stats.turns} ${curLang === "zh" ? "轮" : "trn"} · ${stats.steps} ${curLang === "zh" ? "步" : "stp"} · ${fmtDur(totalMs)}` : t("stTokens"),
             CARET(shown)),
           (open || closing) ? react.createElement("div", {
-            className: "dshmu-stats-sheet",
+            className: "dshmu-stats-wrap",
             "data-closing": closing ? "" : undefined,
-            onAnimationEnd: (e) => {
-              // 只认 sheet 自身的动画（cell/vers 的 animationend 会冒泡上来）
-              if (closing && e.target === e.currentTarget) finishClose();
-            },
-          }, cells) : null);
+          },
+            react.createElement("div", {
+              className: "dshmu-stats-sheet",
+              onAnimationEnd: (e) => {
+                // 只认 sheet 自身的动画（cell/vers 的 animationend 会冒泡上来）；
+                // 内容淡出与 wrap 高度收缩同为 200ms 同曲线，结束即同步卸载
+                if (closing && e.target === e.currentTarget) finishClose();
+              },
+            }, cells)) : null);
       }
 
       /* ---------- 组件 ---------- */
