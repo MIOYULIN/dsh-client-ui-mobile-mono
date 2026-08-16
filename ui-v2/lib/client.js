@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     var exports = module.exports;
     const react = require("react");
     // 本插件版本（与 package.json 保持同步；统计卡脚注展示用）
-    const VERSION = "0.4.11";
+    const VERSION = "0.4.12";
 
     /* ---------------------------------------------------------------
      * 黑白主题 token 表：--dsw-alias-* / --dsw-specific-* 的灰阶覆盖。
@@ -404,7 +404,8 @@ window.__ModuleLoader__.load({
       body[data-dshmu-touch] .VOzbGW_panel,
       body[data-dshmu-touch] .VOzbGW_content > *,
       body[data-dshmu-touch] .VOzbGW_navCell,
-      body[data-dshmu-touch] .qSYn7G_cards > * {
+      body[data-dshmu-touch] .qSYn7G_cards > *,
+      body[data-dshmu-touch] [class$="_root"]:has(> [class$="_ledger"]) [class$="_details"] {
         animation: none !important;
         transition-duration: 0.01ms !important;
       }
@@ -652,6 +653,68 @@ window.__ModuleLoader__.load({
     .dshmu-seg button[data-on="true"] {
       background: var(--dsw-alias-label-primary, #000000);
       color: var(--dsw-alias-label-primary-foreground, #ffffff);
+    }
+
+    /* ------------------------------------------------------------
+     * Session log（Trajectory 视图）移动适配：
+     * 官方类名为 CSS-modules hash 格式（<hash>_<local>），local 段
+     * 跨版本稳定 → 用 $= 后缀匹配；锚点 =「直接含 ledger 子列的
+     * 视图根」结构签名（:has），避免 hash 漂移与误伤其他包。
+     * ---------------------------------------------------------- */
+    /* 视图切换标签（Chat / Session log …）：间距收窄 + 横向滚动防溢出 */
+    body[data-dshmu-touch] [class$="_viewArea"] > [class$="_tabs"] {
+      gap: 16px !important;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    body[data-dshmu-touch] [class$="_viewArea"] > [class$="_tabs"]::-webkit-scrollbar { display: none; }
+    body[data-dshmu-touch] [class$="_viewArea"] > [class$="_tabs"] > [class$="_tab"] {
+      flex: none; padding-bottom: 9px !important; font-size: 14px !important;
+    }
+
+    body[data-dshmu-touch] [class$="_root"]:has(> [class$="_ledger"]) {
+      /* 工具栏高度自适应：搜索框换行占满第二行 */
+      --dsh-trajectory-toolbar-height: auto;
+
+      /* 工具栏：按钮加高保触摸目标；搜索框独占第二行（防同行挤压溢出） */
+      & > [class$="_root"] [class$="_inner"] { gap: 2px; padding: 4px; flex-wrap: wrap; }
+      & > [class$="_root"] [class$="_actions"] { gap: 0; }
+      & > [class$="_root"] [class$="_toggle"],
+      & > [class$="_root"] [class$="_action"],
+      & > [class$="_root"] [class$="_control"] { height: 32px; padding: 0 9px; }
+      & > [class$="_root"] [class$="_search"] {
+        order: 3; flex: 1 1 100%; height: 32px; min-width: 0; margin-left: 0;
+      }
+
+      /* 时序概览：官方 touch-action:none 会吞掉纵向手势卡死页面滚动，
+         放行 pan-y（水平拖选仍归时间轴） */
+      & [class$="_track"] { touch-action: pan-y; }
+
+      /* 账本表格：行高提升为触摸目标；subtool 缩进收紧 */
+      & table[class$="_table"] th { height: 36px; }
+      & table[class$="_table"] td { height: 40px; }
+      & table[class$="_table"] tr[data-kind="subtool"] [class$="_content"] { padding-left: 18px; }
+      /* 工具行 request/result 双列 → 窄屏单列堆叠 */
+      & [class$="_resultPreview"] { grid-template-columns: minmax(0, 1fr); }
+
+      /* 检查器：全宽 sheet 化（官方 @760 仅 92% 覆盖），右缘滑入，
+         头部/标签/关闭钮加大为触摸目标 */
+      & [class$="_details"] {
+        width: 100% !important;
+        max-width: 100% !important;
+        border-left: none;
+        animation: dshmu-traj-panel 320ms cubic-bezier(0.32, 0.72, 0, 1);
+      }
+      & [class$="_details"] [class$="_detailsResizeHandle"] { display: none; }
+      & [class$="_details"] [class$="_detailsHeader"] { height: 48px; }
+      & [class$="_details"] [class$="_close"] { width: 34px; height: 34px; }
+      & [class$="_details"] [class$="_detailTabs"] { height: 40px; }
+      & [class$="_details"] [class$="_detailTab"] { padding: 0 11px; font-size: 13px; }
+    }
+    @keyframes dshmu-traj-panel {
+      from { opacity: 0; transform: translateX(38px); }
+      to { opacity: 1; transform: none; }
     }
     `;
 
