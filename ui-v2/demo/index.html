@@ -818,7 +818,7 @@ const ctx = {
 
 // 5. 加载真实插件模块并 apply
 try {
-  await import("../ui-v2/lib/client.js");
+  await import("../lib/client.js");
   const m = window.__dshmuSpec.factory((name) => (name === "react" ? reactShim : {}));
   m.apply(ctx);
   console.log("[demo] plugin applied");
