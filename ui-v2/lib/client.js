@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     var exports = module.exports;
     const react = require("react");
     // 本插件版本（与 package.json 保持同步；统计卡脚注展示用）
-    const VERSION = "0.4.9";
+    const VERSION = "0.4.10";
 
     /* ---------------------------------------------------------------
      * 黑白主题 token 表：--dsw-alias-* / --dsw-specific-* 的灰阶覆盖。
@@ -1034,9 +1034,9 @@ window.__ModuleLoader__.load({
           if (billed > 0) cell(t("stCache"), `${Math.round(usage.cacheReadTokens / billed * 100)}%`);
           cell(t("stTokens"), `${fmtTok(billed)} / ${fmtTok(usage.outputTokens)}`);
         }
-        // 版本脚注：填满统计卡尾部空白
+        // 版本脚注：填满统计卡尾部空白（MONO = mobile-mono，呼应包名与黑白设计语言）
         cells.push(react.createElement("div", { key: "__vers", className: "dshmu-stats-vers" },
-          `DSH M-UI · v${VERSION}`));
+          `MONO · v${VERSION}`));
         return react.createElement("div", { className: "dshmu-stats" },
           react.createElement("button", {
             type: "button",
