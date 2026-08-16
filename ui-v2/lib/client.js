@@ -164,9 +164,8 @@ window.__ModuleLoader__.load({
       border-left: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 8%));
       box-shadow: none; /* 关闭态零阴影：防出屏后阴影向屏内泄漏 */
       transform: translateX(102%);
-      transition:
-        transform 320ms cubic-bezier(0.32, 0.72, 0, 1),
-        box-shadow 320ms cubic-bezier(0.32, 0.72, 0, 1);
+      /* 只过渡 transform（合成器动画）；box-shadow 过渡会逐帧重绘 */
+      transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
     }
     [data-dshmu-mobile]:not([data-details-collapsed]) > [data-dshmu-details],
     [data-dshmu-mobile]:not([data-details-collapsed]) [class*="detailsCol" i] {
@@ -184,9 +183,7 @@ window.__ModuleLoader__.load({
       border-right: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 8%));
       box-shadow: none;
       transform: translateX(-102%);
-      transition:
-        transform 320ms cubic-bezier(0.32, 0.72, 0, 1),
-        box-shadow 320ms cubic-bezier(0.32, 0.72, 0, 1);
+      transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
     }
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > [data-dshmu-sidebar],
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > div:first-child {
@@ -203,12 +200,11 @@ window.__ModuleLoader__.load({
     [data-dshmu-mobile][data-dshmu-arming] > [data-dshmu-center],
     [data-dshmu-mobile][data-dshmu-arming] > div:nth-child(2) { transition: none !important; }
 
-    /* 抽屉打开时中列景深收缩 */
+    /* 抽屉打开时中列景深收缩（不用 will-change：常态驻层在低端机反噬） */
     [data-dshmu-mobile] > [data-dshmu-center],
     [data-dshmu-mobile] > div:nth-child(2) {
       transition: transform 320ms cubic-bezier(0.32, 0.72, 0, 1);
       transform-origin: left center;
-      will-change: transform;
     }
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > [data-dshmu-center],
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) > div:nth-child(2) {
@@ -221,14 +217,14 @@ window.__ModuleLoader__.load({
     /* 输入栏模型选择器：隐藏模型名（sweepModelTriggers 打标，偏好可关） */
     body[data-dshmu-touch] [data-dshmu-hide="model"] { display: none !important; }
 
-    /* 遮罩：显隐完全由官方开合态状态机管辖 */
+    /* 遮罩：显隐完全由官方开合态状态机管辖。
+       性能：不用 backdrop-filter —— 全屏 blur 在移动端 WebView 是抽屉
+       卡顿的头号来源（每帧全屏重采样）；纯 rgba 层零开销。 */
     [data-dshmu-mobile] .dshmu-backdrop {
       display: none;
       position: absolute; inset: 0;
       z-index: 25;
-      background: rgb(0 0 0 / 42%);
-      -webkit-backdrop-filter: blur(10px) saturate(0.9);
-      backdrop-filter: blur(10px) saturate(0.9);
+      background: rgb(0 0 0 / 48%);
     }
     [data-dshmu-mobile]:not([data-sidebar-collapsed]) .dshmu-backdrop,
     [data-dshmu-mobile]:not([data-details-collapsed]) .dshmu-backdrop {
@@ -237,7 +233,7 @@ window.__ModuleLoader__.load({
     }
     [data-dshmu-mobile][data-dshmu-dragging] .dshmu-backdrop {
       display: block;
-      opacity: var(--dshmu-progress, 1);
+      opacity: 1; /* 拖拽透明度由 JS 直写 style.opacity（见 onTouchMove） */
       animation: none;
     }
     @keyframes dshmu-fade-in { from { opacity: 0; } to { opacity: 1; } }
@@ -614,35 +610,42 @@ window.__ModuleLoader__.load({
        * 官方 hash 类名（如 pI_x6G_detailsCol）与列序随版本漂移，CSS 选择器
        * 双通道兜底之一即此标记。只认 grid 列子元素（跳过 shell.overlay
        * 挂载点等非列子节点），详情列优先按 *detailsCol* 类名包含匹配。 */
+      let taggedCols = null; // [sidebar, center, details] 指纹：命中即跳过重打
       const tagColumns = () => {
         if (frame === null || !frame.isConnected || typeof document === "undefined") return;
-        for (const el of frame.querySelectorAll("[data-dshmu-sidebar], [data-dshmu-center], [data-dshmu-details]")) {
-          el.removeAttribute("data-dshmu-sidebar");
-          el.removeAttribute("data-dshmu-center");
-          el.removeAttribute("data-dshmu-details");
-        }
         const cols = Array.from(frame.children).filter((n) => n.nodeType === 1
           && !n.hasAttribute("data-shell-overlay")
           && !n.classList.contains("dshmu-backdrop")
           && !n.classList.contains("dshmu-toggle"));
-        if (cols.length < 2) return;
-        cols[0].setAttribute("data-dshmu-sidebar", "");
-        cols[1].setAttribute("data-dshmu-center", "");
+        if (cols.length < 2) { taggedCols = null; return; }
         let det = cols.find((n) => /detailscol/i.test(String(n.className)));
         if (det === undefined) {
           const nested = frame.querySelector("[class*='detailsCol' i]");
           if (nested !== null && !cols[0].contains(nested) && !cols[1].contains(nested)) det = nested;
         }
         if (det === undefined && cols.length >= 3) det = cols[2];
+        // 指纹未变（同一组元素、同样角色）→ 跳过，避免高频摘挂属性触发重排
+        if (taggedCols !== null
+          && taggedCols[0] === cols[0] && taggedCols[1] === cols[1]
+          && taggedCols[2] === (det || null)) return;
+        for (const el of frame.querySelectorAll("[data-dshmu-sidebar], [data-dshmu-center], [data-dshmu-details]")) {
+          el.removeAttribute("data-dshmu-sidebar");
+          el.removeAttribute("data-dshmu-center");
+          el.removeAttribute("data-dshmu-details");
+        }
+        cols[0].setAttribute("data-dshmu-sidebar", "");
+        cols[1].setAttribute("data-dshmu-center", "");
         if (det !== undefined) det.setAttribute("data-dshmu-details", "");
+        taggedCols = [cols[0], cols[1], det || null];
       };
 
       const resetDragVisual = () => {
         if (frame === null || !frame.isConnected) return;
-        frame.style.removeProperty("--dshmu-progress");
         frame.removeAttribute("data-dshmu-dragging");
         const sb = drawerEl();
         if (sb !== null) { sb.style.transition = ""; sb.style.transform = ""; }
+        const bd = backdropEl();
+        if (bd !== null) bd.style.opacity = "";
       };
       const syncDrawerState = () => {
         if (typeof document === "undefined") return;
@@ -678,7 +681,13 @@ window.__ModuleLoader__.load({
           }
           if (drawerMo === null && typeof MutationObserver !== "undefined") {
             drawerMo = new MutationObserver(syncDrawerState);
-            drawerMo.observe(frame, { attributes: true, attributeFilter: ["data-sidebar-collapsed", "data-details-collapsed", "data-dshmu-mobile"] });
+            // childList（不带 subtree）= 只看 frame 直接子级 = 列挂载/卸载，
+            // 不会因抽屉内部内容刷新而触发
+            drawerMo.observe(frame, {
+              childList: true,
+              attributes: true,
+              attributeFilter: ["data-sidebar-collapsed", "data-details-collapsed", "data-dshmu-mobile"],
+            });
           }
           tagColumns();
         }
@@ -746,15 +755,36 @@ window.__ModuleLoader__.load({
         }
       };
 
-      // 自愈观察器：列重挂 / 触发器内容变化（切模型、切思考等级）时重扫
+      // 自愈观察器（性能版）：只监听 childList（不含 characterData ——
+      // 流式输出/秒级计时会高频触发），且仅当新增节点命中 trigger 模式
+      // 才安排重扫；拖拽中一律跳过。菜单内点击（切模型/等级）由 click
+      // 监听兜底 —— 这些路径覆盖了 trigger 重挂的全部场景。
+      const TRIGGER_HIT = (n) => (typeof n.matches === "function" && n.matches('[class*="_trigger"]'))
+        || (typeof n.querySelector === "function" && n.querySelector('[class*="_trigger"]') !== null);
       let sweepMo = null;
       let sweepTimer = 0;
+      const scheduleSweep = () => {
+        if (sweepTimer !== 0) return;
+        sweepTimer = setTimeout(() => {
+          sweepTimer = 0;
+          if (drag === null) sweepModelTriggers();
+        }, 250);
+      };
       if (typeof MutationObserver !== "undefined") {
-        sweepMo = new MutationObserver(() => {
-          clearTimeout(sweepTimer);
-          sweepTimer = setTimeout(() => { tagColumns(); sweepModelTriggers(); }, 150);
+        sweepMo = new MutationObserver((muts) => {
+          if (drag !== null) return;
+          for (const m of muts) {
+            if (m.addedNodes.length > 0) {
+              for (const n of m.addedNodes) {
+                if (n.nodeType === 1 && TRIGGER_HIT(n)) { scheduleSweep(); return; }
+              }
+            } else if (m.removedNodes.length > 0 && hiddenByName.size > 0) {
+              scheduleSweep(); return;
+            }
+          }
         });
-        sweepMo.observe(document.body, { childList: true, subtree: true, characterData: true });
+        sweepMo.observe(document.body, { childList: true, subtree: true });
+        document.addEventListener("click", scheduleSweep, true);
         sweepModelTriggers();
       }
 
@@ -806,7 +836,8 @@ window.__ModuleLoader__.load({
         if (drag.fromClosed) x -= w;
         x = Math.min(0, Math.max(-w, x));
         sb.style.transform = `translateX(${x}px)`;
-        frame.style.setProperty("--dshmu-progress", String(Math.max(0, Math.min(1, 1 + x / w))));
+        const bd = backdropEl();
+        if (bd !== null) bd.style.opacity = String(Math.max(0, Math.min(1, 1 + x / w)));
         if (Math.abs(t0.clientX - drag.x0) > 10 && e.cancelable) e.preventDefault();
       };
       const onTouchEnd = () => {
@@ -969,6 +1000,7 @@ window.__ModuleLoader__.load({
           if (drawerMo !== null) drawerMo.disconnect();
           if (sweepMo !== null) sweepMo.disconnect();
           clearTimeout(sweepTimer);
+          document.removeEventListener("click", scheduleSweep, true);
           unhideModelNames();
           if (drag !== null) { resetDragVisual(); drag = null; }
           delete window.__dshmuApplyMode;
