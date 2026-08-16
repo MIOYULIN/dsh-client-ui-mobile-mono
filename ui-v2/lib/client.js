@@ -14,7 +14,7 @@ window.__ModuleLoader__.load({
     var exports = module.exports;
     const react = require("react");
     // 本插件版本（与 package.json 保持同步；统计卡脚注展示用）
-    const VERSION = "0.4.13";
+    const VERSION = "0.4.14";
 
     /* ---------------------------------------------------------------
      * 黑白主题 token 表：--dsw-alias-* / --dsw-specific-* 的灰阶覆盖。
@@ -256,6 +256,15 @@ window.__ModuleLoader__.load({
       overflow: hidden;
       transform-origin: 50% 100%;
       animation: dshmu-sheet-up 260ms cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    /* 收起：下滑缩小退出（退出期间由 JS 保持挂载），结束态钉住防闪回 */
+    [data-dshmu-mobile] .dshmu-stats-sheet[data-closing] {
+      animation: dshmu-sheet-down 200ms cubic-bezier(0.32, 0.72, 0, 1) both;
+      pointer-events: none;
+    }
+    @keyframes dshmu-sheet-down {
+      from { opacity: 1; transform: translateY(0) scale(1); }
+      to { opacity: 0; transform: translateY(16px) scale(0.97); }
     }
     [data-dshmu-mobile] .dshmu-stats-cell {
       padding: 9px 14px 8px;
@@ -1210,6 +1219,28 @@ window.__ModuleLoader__.load({
 
       function StatsFold(props) {
         const [open, setOpen] = react.useState(false);
+        /* 收起动画：退出期间保持挂载，播完 dshmu-sheet-down 再卸载。
+         * closing 态由 onAnimationEnd 或 260ms 兜底定时器收尾
+         * （reduced-motion 下 animation:none 不派发事件）。 */
+        const [closing, setClosing] = react.useState(false);
+        const closeTimer = react.useRef(0);
+        const finishClose = () => {
+          if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = 0; }
+          setOpen(false);
+          setClosing(false);
+        };
+        const toggleSheet = () => {
+          if (closing) {
+            // 退出中再点一次：取消收起，回放入场动画
+            if (closeTimer.current) { clearTimeout(closeTimer.current); closeTimer.current = 0; }
+            setClosing(false);
+          } else if (open) {
+            setClosing(true);
+            closeTimer.current = setTimeout(finishClose, 260);
+          } else {
+            setOpen(true);
+          }
+        };
         const proj = typeof props.useProjection === "function" ? props.useProjection : null;
         const usage = proj ? proj("tokenUsage") : undefined;
         const projected = proj ? proj("sessionStats") : undefined;
@@ -1243,17 +1274,25 @@ window.__ModuleLoader__.load({
         // 版本脚注：填满统计卡尾部空白（MONO = mobile-mono，呼应包名与黑白设计语言）
         cells.push(react.createElement("div", { key: "__vers", className: "dshmu-stats-vers" },
           `MONO · v${VERSION}`));
+        const shown = open && !closing;
         return react.createElement("div", { className: "dshmu-stats" },
           react.createElement("button", {
             type: "button",
             className: "dshmu-stats-chip",
-            onClick: () => setOpen(!open),
-            "aria-expanded": String(open),
-            "aria-label": open ? t("stCollapse") : t("stExpand"),
+            onClick: toggleSheet,
+            "aria-expanded": String(shown),
+            "aria-label": shown ? t("stCollapse") : t("stExpand"),
           },
             hasStats ? `${stats.turns} ${curLang === "zh" ? "轮" : "trn"} · ${stats.steps} ${curLang === "zh" ? "步" : "stp"} · ${fmtDur(totalMs)}` : t("stTokens"),
-            CARET(open)),
-          open ? react.createElement("div", { className: "dshmu-stats-sheet" }, cells) : null);
+            CARET(shown)),
+          (open || closing) ? react.createElement("div", {
+            className: "dshmu-stats-sheet",
+            "data-closing": closing ? "" : undefined,
+            onAnimationEnd: (e) => {
+              // 只认 sheet 自身的动画（cell/vers 的 animationend 会冒泡上来）
+              if (closing && e.target === e.currentTarget) finishClose();
+            },
+          }, cells) : null);
       }
 
       /* ---------- 组件 ---------- */
