@@ -2,6 +2,8 @@
 
 DeepSeek Harness（DSH）Web UI 的**移动端适配插件**：手机浏览器自动切换抽屉式布局 + 设置弹窗全屏化 + 详情面板抽屉化，并为所有端注入**黑白（单色）主题**。桌面端零影响。
 
+> **ui-v2**：重做的第二代界面（底部标签栏设置弹窗 + 用户偏好设置卡 + 三档抽屉宽度），与参考项目完全区分，见 [`ui-v2/`](./ui-v2/)。两者同包名，只装一个。
+
 ## 特性
 
 ### 移动端布局（UA 检测，仅手机浏览器启用）
@@ -84,7 +86,8 @@ pnpm dsh web --patch /绝对路径/dsh-m-ui/cordis.patch.yml
 ├── demo/index.html       # 独立演示页（mock harness 运行时，可直接打开体验）
 ├── install.sh            # profile 安装脚本
 ├── uninstall.sh          # 卸载脚本
-└── cordis.patch.yml      # 组合行参考
+├── cordis.patch.yml      # 组合行参考
+└── ui-v2/                # 第二代界面（底部标签栏设置 + 偏好设置卡），见 ui-v2/README.md
 ```
 
 `demo/index.html` 复刻了 DSH AppFrame 三栏结构与 layout/theme/slots 服务的 mock，加载的就是正式版 `lib/client.js`——桌面打开后点 `MOBILE` 可直接预览抽屉与黑白主题，点 `EJECT` 可验证卸载回滚。

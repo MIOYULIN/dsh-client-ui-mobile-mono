@@ -1,0 +1,40 @@
+# ui-v2 — dsh-client-ui-mobile-mono v0.4.0
+
+DSH Web 移动端插件的第二代界面。与仓库根目录的 v1（`lib/`）相比，ui-v2 重做了设置与各界面的视觉和交互，刻意与参考项目 `huanxi-drxx/dsh-client-ui-mobile` 保持距离。
+
+## 与 v1 / 参考项目的差异
+
+| 方面 | v1（根目录） | ui-v2 |
+| --- | --- | --- |
+| 设置弹窗导航 | 顶部横向标签（与参考项目相似） | 底部标签栏，拇指可达，刘海屏安全区自适应 |
+| 用户偏好 | 无 | 自有「移动端界面」设置卡：黑白主题开关、抽屉宽度、左缘手势，`localStorage` 持久化并热应用 |
+| 抽屉 | 固定宽度 | 可选 320 / 360 / 400 三档宽度 |
+| 视觉 | 基础灰阶 | Nothing OS × Linear 式黑白极简：发丝边框、点阵纹理、等宽功能标签 |
+
+## 安装
+
+```bash
+cd ui-v2
+./install.sh            # 或：DSH_HOME=~/.dsh ./install.sh
+```
+
+卸载：`./uninstall.sh`。本地开发：
+
+```bash
+pnpm dsh web --patch /absolute/path/to/dsh-m-ui/ui-v2/cordis.patch.yml
+```
+
+## 结构
+
+```
+ui-v2/
+├── package.json   # @local/dsh-client-ui-mobile-mono @ 0.4.0
+├── install.sh
+├── uninstall.sh
+├── cordis.patch.yml
+└── lib/
+    ├── index.js   # 宿主端入口（无宿主侧工作）
+    └── client.js  # 浏览器端：抽屉布局 + 黑白主题 + 偏好设置卡
+```
+
+MIT License.

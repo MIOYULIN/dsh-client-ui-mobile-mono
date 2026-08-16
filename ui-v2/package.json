@@ -1,0 +1,17 @@
+{
+  "name": "@local/dsh-client-ui-mobile-mono",
+  "version": "0.4.0",
+  "description": "DSH Web mobile drawer layout + monochrome theme (ui-v2: bottom-tab settings, configurable preferences card)",
+  "main": "lib/index.js",
+  "keywords": ["dsh", "deepseek-harness", "plugin", "mobile", "monochrome"],
+  "license": "MIT",
+  "dsh": {
+    "client": {
+      "manifest": "@deepseek-ai/dsh-client-runtime",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime",
+        "@deepseek-ai/dsh-client-ui-layout"
+      ]
+    }
+  }
+}
