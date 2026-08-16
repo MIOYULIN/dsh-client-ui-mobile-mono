@@ -690,8 +690,13 @@ window.__ModuleLoader__.load({
           tagColumns();
         }
         const ua = (typeof navigator !== "undefined" && navigator.userAgent) || "";
-        const mobile = window.__dshmuForce === true
-          || /Android|iPhone|iPod|iPad|Windows Phone|Mobile/i.test(ua);
+        // 排查开关：localStorage.setItem("dshmu:disable","1") 后刷新 →
+        // 本插件完全休眠（等价未安装）；仍卡 ⇒ 卡顿与本插件无关。
+        let hardDisabled = false;
+        try { hardDisabled = localStorage.getItem("dshmu:disable") === "1"; } catch { /* ignore */ }
+        const mobile = hardDisabled || window.__dshmuDisable === true ? false
+          : (window.__dshmuForce === true
+            || /Android|iPhone|iPod|iPad|Windows Phone|Mobile/i.test(ua));
         if (mobile) {
           const wasMobile = frame.hasAttribute("data-dshmu-mobile");
           if (!wasMobile) {
@@ -758,38 +763,47 @@ window.__ModuleLoader__.load({
         }
       };
 
-      // 自愈观察器（性能版）：只监听 childList（不含 characterData ——
-      // 流式输出/秒级计时会高频触发），且仅当新增节点命中 trigger 模式
-      // 才安排重扫；拖拽中一律跳过。菜单内点击（切模型/等级）由 click
-      // 监听兜底 —— 这些路径覆盖了 trigger 重挂的全部场景。
-      const TRIGGER_HIT = (n) => (typeof n.matches === "function" && n.matches('[class*="_trigger"]'))
-        || (typeof n.querySelector === "function" && n.querySelector('[class*="_trigger"]') !== null);
-      let sweepMo = null;
+      // 自愈（轮询版，零 MutationObserver）：body subtree 观察器在首页
+      // 动画 / 流式输出下每个 React commit 都进回调并逐节点 querySelector，
+      // 低端机持续掉帧。改为：click 兜底（打开/切换菜单必然点击）+
+      // 1.5s 轻量轮询 —— 轮询先做一次早退探测（querySelector 命中首个
+      // trigger 即返回），仅在隐藏文本指纹变化时才跑逐叶扫描。
       let sweepTimer = 0;
+      let sweepIv = 0;
+      let lastHiddenSig = "";
+      const hiddenSig = () => {
+        let s = "";
+        for (const el of hiddenByName) s += (el.textContent || "") + "\u0001";
+        return s;
+      };
+      const runSweep = () => {
+        if (drag !== null) return;
+        sweepModelTriggers();
+        lastHiddenSig = hiddenSig();
+      };
       const scheduleSweep = () => {
         if (sweepTimer !== 0) return;
         sweepTimer = setTimeout(() => {
           sweepTimer = 0;
-          if (drag === null) sweepModelTriggers();
+          runSweep();
         }, 250);
       };
-      if (typeof MutationObserver !== "undefined") {
-        sweepMo = new MutationObserver((muts) => {
-          if (drag !== null) return;
-          for (const m of muts) {
-            if (m.addedNodes.length > 0) {
-              for (const n of m.addedNodes) {
-                if (n.nodeType === 1 && TRIGGER_HIT(n)) { scheduleSweep(); return; }
-              }
-            } else if (m.removedNodes.length > 0 && hiddenByName.size > 0) {
-              scheduleSweep(); return;
-            }
-          }
-        });
-        sweepMo.observe(document.body, { childList: true, subtree: true });
-        document.addEventListener("click", scheduleSweep, true);
-        sweepModelTriggers();
-      }
+      const pollSweep = () => {
+        if (drag !== null) return;
+        if (!document.body.hasAttribute("data-dshmu-touch") || !opts.hideModel) {
+          if (hiddenByName.size > 0) runSweep();
+          return;
+        }
+        // 早退探测：无 trigger（如首页无输入栏）时一次 querySelector 即返回
+        if (document.querySelector('[class*="_trigger"]') === null) {
+          if (hiddenByName.size > 0) runSweep();
+          return;
+        }
+        if (hiddenSig() !== lastHiddenSig) runSweep();
+      };
+      runSweep();
+      document.addEventListener("click", scheduleSweep, true);
+      sweepIv = setInterval(pollSweep, 1500);
 
       /* ---------- ESC 关闭（详情优先） ---------- */
       const closeDetails = () => {
@@ -1001,7 +1015,7 @@ window.__ModuleLoader__.load({
           document.removeEventListener("touchcancel", onTouchEnd);
           if (ro !== null) ro.disconnect();
           if (drawerMo !== null) drawerMo.disconnect();
-          if (sweepMo !== null) sweepMo.disconnect();
+          if (sweepIv !== 0) clearInterval(sweepIv);
           clearTimeout(sweepTimer);
           document.removeEventListener("click", scheduleSweep, true);
           unhideModelNames();
