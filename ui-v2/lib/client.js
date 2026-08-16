@@ -13,6 +13,8 @@ window.__ModuleLoader__.load({
     var module = { exports: {} };
     var exports = module.exports;
     const react = require("react");
+    // 本插件版本（与 package.json 保持同步；统计卡脚注展示用）
+    const VERSION = "0.4.9";
 
     /* ---------------------------------------------------------------
      * 黑白主题 token 表：--dsw-alias-* / --dsw-specific-* 的灰阶覆盖。
@@ -278,6 +280,17 @@ window.__ModuleLoader__.load({
       font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
       font-size: 13px; color: var(--dsw-alias-label-primary, #0f1115);
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    /* 版本脚注：横跨双列，填满统计卡尾部空白 */
+    [data-dshmu-mobile] .dshmu-stats-vers {
+      grid-column: 1 / -1;
+      padding: 7px 14px 8px;
+      border-top: 1px solid var(--dsw-alias-border-l1, rgb(0 0 0 / 6%));
+      text-align: center;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--dsw-alias-label-tertiary, #737373);
+      animation: dshmu-rise 240ms cubic-bezier(0.32, 0.72, 0, 1) 150ms both;
     }
 
     /* 遮罩：显隐完全由官方开合态状态机管辖 */
@@ -1021,6 +1034,9 @@ window.__ModuleLoader__.load({
           if (billed > 0) cell(t("stCache"), `${Math.round(usage.cacheReadTokens / billed * 100)}%`);
           cell(t("stTokens"), `${fmtTok(billed)} / ${fmtTok(usage.outputTokens)}`);
         }
+        // 版本脚注：填满统计卡尾部空白
+        cells.push(react.createElement("div", { key: "__vers", className: "dshmu-stats-vers" },
+          `DSH M-UI · v${VERSION}`));
         return react.createElement("div", { className: "dshmu-stats" },
           react.createElement("button", {
             type: "button",
